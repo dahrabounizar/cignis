@@ -164,6 +164,21 @@ export const Dashboard = () => {
         </div>
       </div>
 
+      {/* Fallback Data Warning */}
+      {(dashboardData as any)?.isFallback && (
+        <Card variant="glass" className="p-4 bg-yellow-50 border-yellow-200">
+          <div className="flex items-center">
+            <AlertCircle size={16} className="mr-2 text-yellow-600" />
+            <div>
+              <h3 className="font-semibold text-yellow-800">Limited Data Available</h3>
+              <p className="text-sm text-yellow-700 mt-1">
+                {(dashboardData as any).message}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Debug Panel */}
       {debugMode && dashboardData && (
         <Card variant="glass" className="p-4 bg-blue-50 border-blue-200">
@@ -183,6 +198,7 @@ export const Dashboard = () => {
           <div className="text-sm space-y-2">
             <div>Last Updated: {dashboardData.lastUpdated}</div>
             <div>DMA Token: {dmaToken ? 'Present' : 'Missing'}</div>
+            <div>Is Fallback Data: {(dashboardData as any)?.isFallback ? 'Yes' : 'No'}</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <strong>Profile Evaluation:</strong>

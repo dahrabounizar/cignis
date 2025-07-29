@@ -32,6 +32,7 @@ export async function handler(event, context) {
   }
 
   try {
+    // Use exact URL structure from DMA API documentation
     let url = `https://api.linkedin.com/rest/memberChangeLogs?q=memberAndApplication&count=${count}`;
     if (startTime) {
       url += `&startTime=${startTime}`;

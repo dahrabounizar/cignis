@@ -26,6 +26,23 @@ export async function handler(event, context) {
     };
   }
 
+  // Validate domain parameter according to DMA API documentation
+  const validDomains = [
+    'PROFILE', 'CONNECTIONS', 'MEMBER_SHARE_INFO', 
+    'ALL_COMMENTS', 'ALL_LIKES', 'SKILLS', 'POSITIONS', 'EDUCATION'
+  ];
+  
+  if (domain && !validDomains.includes(domain)) {
+    console.warn(`LinkedIn Snapshot Function - Invalid domain: ${domain}`);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ 
+        error: "Invalid domain parameter", 
+        validDomains: validDomains 
+      }),
+    };
+  }
+
   try {
     let url = "https://api.linkedin.com/rest/memberSnapshotData?q=criteria";
     if (domain) {

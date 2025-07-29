@@ -26,12 +26,14 @@ export async function handler(event, context) {
   try {
     console.log("Dashboard Data: Starting analysis");
 
-    // Fetch all required data in parallel
+    // Fetch all required data in parallel following DMA API guide
     const [
       profileData,
       connectionsData,
       postsData,
       changelogData,
+      commentsData,
+      likesData,
       skillsData,
       positionsData,
       educationData
@@ -40,38 +42,68 @@ export async function handler(event, context) {
       fetchLinkedInData(authorization, "linkedin-snapshot", "CONNECTIONS"),
       fetchLinkedInData(authorization, "linkedin-snapshot", "MEMBER_SHARE_INFO"),
       fetchLinkedInData(authorization, "linkedin-changelog", null, "count=100"),
+      fetchLinkedInData(authorization, "linkedin-snapshot", "ALL_COMMENTS"),
+      fetchLinkedInData(authorization, "linkedin-snapshot", "ALL_LIKES"),
       fetchLinkedInData(authorization, "linkedin-snapshot", "SKILLS"),
       fetchLinkedInData(authorization, "linkedin-snapshot", "POSITIONS"),
       fetchLinkedInData(authorization, "linkedin-snapshot", "EDUCATION")
     ]);
 
     // Log data availability for debugging
-    console.log("Dashboard Data: API data summary:", {
+    const dataAvailability = {
       profile: profileData?.elements?.length || 0,
       connections: connectionsData?.elements?.[0]?.snapshotData?.length || 0,
       posts: postsData?.elements?.[0]?.snapshotData?.length || 0,
       changelog: changelogData?.elements?.length || 0,
+      comments: commentsData?.elements?.[0]?.snapshotData?.length || 0,
+      likes: likesData?.elements?.[0]?.snapshotData?.length || 0,
       skills: skillsData?.elements?.[0]?.snapshotData?.length || 0,
       positions: positionsData?.elements?.[0]?.snapshotData?.length || 0,
       education: educationData?.elements?.[0]?.snapshotData?.length || 0
-    });
+    };
+    
+    console.log("Dashboard Data: API data summary:", dataAvailability);
+    
+    // Check if we have minimal data to proceed
+    const hasMinimalData = dataAvailability.profile > 0 || 
+                          dataAvailability.connections > 0 || 
+                          dataAvailability.changelog > 0;
+    
+    if (!hasMinimalData) {
+      console.warn("Dashboard Data: No meaningful data found, providing fallback response");
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Cache-Control": "public, max-age=300, s-maxage=300", // Shorter cache for fallback
+          "Vary": "Authorization"
+        },
+        body: JSON.stringify(createFallbackDashboardData()),
+      };
+    }
 
-    // Calculate profile evaluation scores
+    // Calculate profile evaluation scores with enhanced data
     const profileEvaluation = calculateProfileEvaluation({
       profileData,
       connectionsData,
       postsData,
       changelogData,
+      commentsData,
+      likesData,
       skillsData,
       positionsData,
       educationData
     });
 
-    // Calculate summary KPIs
+    // Calculate summary KPIs with enhanced data
     const summaryKPIs = calculateSummaryKPIs({
       connectionsData,
       postsData,
-      changelogData
+      changelogData,
+      commentsData,
+      likesData
     });
 
     // Calculate mini trends
@@ -92,6 +124,8 @@ export async function handler(event, context) {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Cache-Control": "public, max-age=600, s-maxage=900", // 10 min client, 15 min CDN
+        "Vary": "Authorization"
       },
       body: JSON.stringify(result),
     };
@@ -113,45 +147,83 @@ export async function handler(event, context) {
 }
 
 async function fetchLinkedInData(authorization, endpoint, domain = null, extraParams = "") {
-  try {
-    let url = `/.netlify/functions/${endpoint}`;
-    const params = new URLSearchParams();
-    
-    if (domain) {
-      params.append("domain", domain);
-    }
-    
-    if (extraParams) {
-      const extraParamsObj = new URLSearchParams(extraParams);
-      for (const [key, value] of extraParamsObj) {
-        params.append(key, value);
+  const maxRetries = 2;
+  let lastError = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      let url = `/.netlify/functions/${endpoint}`;
+      const params = new URLSearchParams();
+      
+      if (domain) {
+        params.append("domain", domain);
+      }
+      
+      if (extraParams) {
+        const extraParamsObj = new URLSearchParams(extraParams);
+        for (const [key, value] of extraParamsObj) {
+          params.append(key, value);
+        }
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      console.log(`Attempt ${attempt + 1}/${maxRetries + 1}: Fetching ${endpoint} ${domain || ''}`);
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: authorization,
+          "LinkedIn-Version": "202312",
+        },
+        timeout: 30000, // 30 second timeout
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to fetch ${endpoint} ${domain}: ${response.status} ${response.statusText}`, errorText);
+        
+        // If it's a client error (4xx), don't retry
+        if (response.status >= 400 && response.status < 500) {
+          console.log(`Client error ${response.status}, not retrying`);
+          return null;
+        }
+        
+        // For server errors (5xx), retry
+        if (attempt < maxRetries) {
+          console.log(`Server error ${response.status}, retrying in ${(attempt + 1) * 1000}ms`);
+          await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
+          continue;
+        }
+        
+        return null;
+      }
+
+      const data = await response.json();
+      
+      // Log successful fetch with data summary
+      console.log(`Successfully fetched ${endpoint} ${domain || ''}:`, {
+        hasElements: !!data.elements,
+        elementsCount: data.elements?.length || 0,
+        hasSnapshotData: !!data.elements?.[0]?.snapshotData,
+        snapshotDataCount: data.elements?.[0]?.snapshotData?.length || 0
+      });
+      
+      return data;
+    } catch (error) {
+      lastError = error;
+      console.error(`Attempt ${attempt + 1} failed for ${endpoint} ${domain}:`, error.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in ${(attempt + 1) * 1000}ms`);
+        await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
       }
     }
-    
-    if (params.toString()) {
-      url += `?${params.toString()}`;
-    }
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: authorization,
-        "LinkedIn-Version": "202312",
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Failed to fetch ${endpoint} ${domain}: ${response.status} ${response.statusText}`, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${endpoint} ${domain}:`, error);
-    return null;
   }
+  
+  console.error(`All attempts failed for ${endpoint} ${domain}:`, lastError);
+  return null;
 }
 
 function calculateProfileEvaluation(data) {
@@ -160,6 +232,8 @@ function calculateProfileEvaluation(data) {
     connectionsData,
     postsData,
     changelogData,
+    commentsData,
+    likesData,
     skillsData,
     positionsData,
     educationData
@@ -178,8 +252,8 @@ function calculateProfileEvaluation(data) {
   // 2. Posting Activity (0-10)
   scores.postingActivity = calculatePostingActivity(postsData, changelogData);
 
-  // 3. Engagement Quality (0-10)
-  scores.engagementQuality = calculateEngagementQuality(changelogData);
+  // 3. Engagement Quality (0-10) - Enhanced with snapshot data
+  scores.engagementQuality = calculateEngagementQuality(changelogData, commentsData, likesData);
 
   // 4. Network Growth (0-10)
   scores.networkGrowth = calculateNetworkGrowth(connectionsData);
@@ -291,29 +365,64 @@ function calculatePostingActivity(postsData, changelogData) {
   return score;
 }
 
-function calculateEngagementQuality(changelogData) {
-  console.log("=== ENGAGEMENT QUALITY CALCULATION ===");
+function calculateEngagementQuality(changelogData, commentsData, likesData) {
+  console.log("=== ENGAGEMENT QUALITY CALCULATION (ENHANCED) ===");
   
   const elements = changelogData?.elements || [];
   console.log("Total changelog elements:", elements.length);
   
-  const likes = elements.filter(e => e.resourceName === "socialActions/likes" && e.method === "CREATE");
-  const comments = elements.filter(e => e.resourceName === "socialActions/comments" && e.method === "CREATE");
+  // Get engagement from changelog (last 28 days)
+  const changelogLikes = elements.filter(e => e.resourceName === "socialActions/likes" && e.method === "CREATE");
+  const changelogComments = elements.filter(e => e.resourceName === "socialActions/comments" && e.method === "CREATE");
   const posts = elements.filter(e => e.resourceName === "ugcPosts" && e.method === "CREATE");
   
-  console.log("Engagement data:", {
-    likes: likes.length,
-    comments: comments.length,
+  // Get engagement from snapshot data (historical)
+  const snapshotComments = commentsData?.elements?.[0]?.snapshotData || [];
+  const snapshotLikes = likesData?.elements?.[0]?.snapshotData || [];
+  
+  console.log("Enhanced engagement data:", {
+    changelogLikes: changelogLikes.length,
+    changelogComments: changelogComments.length,
+    snapshotComments: snapshotComments.length,
+    snapshotLikes: snapshotLikes.length,
     posts: posts.length
   });
   
-  console.log("Sample like:", likes[0]);
-  console.log("Sample comment:", comments[0]);
-  console.log("Sample post:", posts[0]);
+  // Use changelog data for recent activity, fallback to snapshot for historical
+  let totalLikes = changelogLikes.length;
+  let totalComments = changelogComments.length;
   
-  if (posts.length === 0) return 0;
+  // If no recent engagement, use snapshot data as baseline
+  if (totalLikes === 0 && totalComments === 0) {
+    totalLikes = Math.min(snapshotLikes.length, 50); // Cap at reasonable number
+    totalComments = Math.min(snapshotComments.length, 30);
+    console.log("Using snapshot data as fallback for engagement");
+  }
   
-  const avgEngagement = (likes.length + comments.length) / posts.length;
+  console.log("Sample changelog like:", changelogLikes[0]);
+  console.log("Sample changelog comment:", changelogComments[0]);
+  console.log("Sample snapshot like:", snapshotLikes[0]);
+  console.log("Sample snapshot comment:", snapshotComments[0]);
+  
+  if (posts.length === 0) {
+    // If no posts in changelog, estimate based on engagement ratio
+    const estimatedPosts = Math.max(Math.floor((totalLikes + totalComments) / 5), 1);
+    const avgEngagement = (totalLikes + totalComments) / estimatedPosts;
+    console.log(`No posts found, estimated ${estimatedPosts} posts based on engagement`);
+    
+    let score = 0;
+    if (avgEngagement >= 20) score = 10;
+    else if (avgEngagement >= 15) score = 8;
+    else if (avgEngagement >= 10) score = 6;
+    else if (avgEngagement >= 5) score = 4;
+    else if (avgEngagement >= 1) score = 2;
+    else score = 0;
+    
+    console.log(`Engagement quality score: ${score}/10 (estimated avg: ${avgEngagement})`);
+    return score;
+  }
+  
+  const avgEngagement = (totalLikes + totalComments) / posts.length;
   
   let score = 0;
   if (avgEngagement >= 20) score = 10;
@@ -687,7 +796,7 @@ function calculateProfessionalBrand(data) {
 }
 
 function calculateSummaryKPIs(data) {
-  const { connectionsData, postsData, changelogData } = data;
+  const { connectionsData, postsData, changelogData, commentsData, likesData } = data;
   
   const totalConnections = connectionsData?.elements?.[0]?.snapshotData?.length || 0;
   
@@ -718,15 +827,26 @@ function calculateSummaryKPIs(data) {
     e.capturedAt >= last30Days
   ) || [];
   
-  // Engagement rate
-  const likes = changelogData?.elements?.filter(e => 
+    // Enhanced engagement rate calculation using both changelog and snapshot data
+  const changelogLikes = changelogData?.elements?.filter(e => 
     e.resourceName === "socialActions/likes" && e.method === "CREATE"
   ) || [];
-  const comments = changelogData?.elements?.filter(e => 
+  const changelogComments = changelogData?.elements?.filter(e => 
     e.resourceName === "socialActions/comments" && e.method === "CREATE"
   ) || [];
+
+  // Use snapshot data as fallback if no recent engagement
+  const snapshotLikes = likesData?.elements?.[0]?.snapshotData || [];
+  const snapshotComments = commentsData?.elements?.[0]?.snapshotData || [];
+
+  let totalEngagement = changelogLikes.length + changelogComments.length;
   
-  const totalEngagement = likes.length + comments.length;
+  // If no recent engagement, use snapshot data as baseline
+  if (totalEngagement === 0 && (snapshotLikes.length > 0 || snapshotComments.length > 0)) {
+    totalEngagement = Math.min(snapshotLikes.length + snapshotComments.length, 100);
+    console.log("Using snapshot data for engagement rate calculation");
+  }
+
   const engagementRate = postsLast30Days > 0 ? 
     ((totalEngagement / postsLast30Days) * 100).toFixed(1) : "0";
   
@@ -783,6 +903,46 @@ function calculateMiniTrends(changelogData) {
     }))
   };
   return trends;
+}
+
+function createFallbackDashboardData() {
+  return {
+    profileEvaluation: {
+      scores: {
+        profileCompleteness: 3,
+        postingActivity: 1,
+        engagementQuality: 1,
+        networkGrowth: 1,
+        audienceRelevance: 2,
+        contentDiversity: 1,
+        engagementRate: 1,
+        mutualInteractions: 1,
+        profileVisibility: 2,
+        professionalBrand: 2
+      },
+      overallScore: 1.5,
+      explanations: getScoreExplanations()
+    },
+    summaryKPIs: {
+      totalConnections: 0,
+      postsLast30Days: 0,
+      engagementRate: "0%",
+      connectionsLast30Days: 0
+    },
+    miniTrends: {
+      posts: Array.from({ length: 7 }, (_, i) => ({ 
+        date: `Day ${i + 1}`, 
+        value: 0 
+      })),
+      engagements: Array.from({ length: 7 }, (_, i) => ({ 
+        date: `Day ${i + 1}`, 
+        value: 0 
+      }))
+    },
+    lastUpdated: new Date().toISOString(),
+    isFallback: true,
+    message: "Limited data available. Complete DMA authentication and ensure you have LinkedIn activity to see detailed analytics."
+  };
 }
 
 function getScoreExplanations() {
