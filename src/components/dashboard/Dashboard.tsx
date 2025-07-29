@@ -229,46 +229,115 @@ export const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card variant="glass" className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <Zap className="mr-2" size={20} />
-            Quick Actions
-          </h3>
-        </div>
-        <div className="space-y-3">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
-            onClick={() => setCurrentModule("analytics")}
-          >
-            📊 View Detailed Analytics
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
-            onClick={() => setCurrentModule("postgen")}
-          >
-            ✍️ Generate New Post
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
-            onClick={() => setCurrentModule("postpulse")}
-          >
-            📈 Analyze Posts (PostPulse)
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
-            onClick={() => setCurrentModule("scheduler")}
-          >
-            📅 Schedule Content
-          </motion.button>
+      <Card variant="premium" className="p-8 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-yellow-200/20 to-orange-200/20 rounded-full blur-2xl transform -translate-x-10 -translate-y-10"></div>
+        <div className="absolute bottom-0 right-0 w-28 h-28 bg-gradient-to-tl from-pink-200/20 to-purple-200/20 rounded-full blur-3xl transform translate-x-14 translate-y-14"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center space-x-3 mb-8">
+            <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl shadow-lg">
+              <Zap size={24} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Quick Actions</h3>
+              <p className="text-gray-600 text-sm">Boost your LinkedIn presence</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative p-6 bg-gradient-to-br from-indigo-50/80 to-purple-50/80 backdrop-blur-sm border border-indigo-200/30 rounded-2xl hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
+              onClick={() => setCurrentModule("analytics")}
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-indigo-200/30 to-purple-200/30 rounded-full blur-xl transform translate-x-8 -translate-y-8"></div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-lg">Detailed Analytics</h4>
+                    <p className="text-sm text-gray-600">Comprehensive insights</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Dive deep into your performance metrics, audience insights, and growth patterns with advanced analytics.
+                </p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative p-6 bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm border border-purple-200/30 rounded-2xl hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
+              onClick={() => setCurrentModule("postgen")}
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-200/30 to-pink-200/30 rounded-full blur-xl transform translate-x-8 -translate-y-8"></div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <span className="text-2xl">✍️</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-lg">Generate New Post</h4>
+                    <p className="text-sm text-gray-600">AI-powered content</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Create engaging LinkedIn posts with AI assistance tailored to your audience and industry.
+                </p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative p-6 bg-gradient-to-br from-green-50/80 to-emerald-50/80 backdrop-blur-sm border border-green-200/30 rounded-2xl hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
+              onClick={() => setCurrentModule("postpulse")}
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-200/30 to-emerald-200/30 rounded-full blur-xl transform translate-x-8 -translate-y-8"></div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <span className="text-2xl">📈</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-lg">Analyze Posts</h4>
+                    <p className="text-sm text-gray-600">PostPulse insights</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Get detailed analysis of your post performance and discover what resonates with your audience.
+                </p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative p-6 bg-gradient-to-br from-blue-50/80 to-cyan-50/80 backdrop-blur-sm border border-blue-200/30 rounded-2xl hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
+              onClick={() => setCurrentModule("scheduler")}
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-200/30 to-cyan-200/30 rounded-full blur-xl transform translate-x-8 -translate-y-8"></div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <span className="text-2xl">📅</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-lg">Schedule Content</h4>
+                    <p className="text-sm text-gray-600">Optimize timing</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Plan and schedule your LinkedIn content for maximum reach and engagement.
+                </p>
+              </div>
+            </motion.button>
+          </div>
         </div>
       </Card>
     </motion.div>
