@@ -18,6 +18,14 @@ export const Dashboard = () => {
   const [debugMode, setDebugMode] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
 
+  // Debug logging for component state
+  console.log('=== Dashboard Component Render ===');
+  console.log('DMA Token present:', !!dmaToken);
+  console.log('Dashboard data present:', !!dashboardData);
+  console.log('Is loading:', isLoading);
+  console.log('Error:', error);
+  console.log('Dashboard data:', dashboardData);
+
   const handleRefetch = async () => {
     setIsRefetching(true);
     try {

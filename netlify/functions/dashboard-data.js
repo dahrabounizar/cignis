@@ -1,5 +1,11 @@
 export async function handler(event, context) {
+  console.log("=== DASHBOARD DATA HANDLER START ===");
+  console.log("HTTP Method:", event.httpMethod);
+  console.log("Headers:", JSON.stringify(event.headers, null, 2));
+  console.log("Query params:", JSON.stringify(event.queryStringParameters, null, 2));
+  
   if (event.httpMethod === "OPTIONS") {
+    console.log("Handling OPTIONS request");
     return {
       statusCode: 200,
       headers: {
@@ -22,9 +28,21 @@ export async function handler(event, context) {
 
   // Extract token from Bearer header
   const token = authorization.replace('Bearer ', '');
+  console.log("Dashboard Data: Token extracted, length:", token.length);
+  console.log("Dashboard Data: Token preview:", token.substring(0, 20) + "...");
 
   try {
     console.log("Dashboard Data: Starting analysis");
+    console.log("Dashboard Data: Current timestamp:", new Date().toISOString());
+
+    // Check if we should use mock data for testing
+    const useMockData = token === 'test-token-12345' || process.env.USE_MOCK_DATA === 'true';
+    console.log("Dashboard Data: Using mock data:", useMockData);
+
+    if (useMockData) {
+      console.log("Dashboard Data: Returning mock data for testing");
+      return getMockDashboardResponse();
+    }
 
     // Fetch all required data in parallel
     const [
@@ -46,7 +64,8 @@ export async function handler(event, context) {
     ]);
 
     // Log data availability for debugging
-    console.log("Dashboard Data: API data summary:", {
+    console.log("\n=== API DATA SUMMARY ===");
+    const dataSummary = {
       profile: profileData?.elements?.length || 0,
       connections: connectionsData?.elements?.[0]?.snapshotData?.length || 0,
       posts: postsData?.elements?.[0]?.snapshotData?.length || 0,
@@ -54,8 +73,29 @@ export async function handler(event, context) {
       skills: skillsData?.elements?.[0]?.snapshotData?.length || 0,
       positions: positionsData?.elements?.[0]?.snapshotData?.length || 0,
       education: educationData?.elements?.[0]?.snapshotData?.length || 0
-    });
+    };
+    console.log("Dashboard Data: API data summary:", dataSummary);
+    
+    // Log actual data samples for debugging
+    console.log("\n=== DATA SAMPLES ===");
+    if (profileData?.elements?.[0]?.snapshotData?.[0]) {
+      console.log("Profile sample keys:", Object.keys(profileData.elements[0].snapshotData[0]));
+      console.log("Profile sample data:", profileData.elements[0].snapshotData[0]);
+    }
+    if (connectionsData?.elements?.[0]?.snapshotData?.[0]) {
+      console.log("Connection sample keys:", Object.keys(connectionsData.elements[0].snapshotData[0]));
+      console.log("Connection sample data:", connectionsData.elements[0].snapshotData[0]);
+    }
+    if (postsData?.elements?.[0]?.snapshotData?.[0]) {
+      console.log("Post sample keys:", Object.keys(postsData.elements[0].snapshotData[0]));
+      console.log("Post sample data:", postsData.elements[0].snapshotData[0]);
+    }
+    if (changelogData?.elements?.[0]) {
+      console.log("Changelog sample keys:", Object.keys(changelogData.elements[0]));
+      console.log("Changelog sample data:", changelogData.elements[0]);
+    }
 
+    console.log("\n=== CALCULATING PROFILE EVALUATION ===");
     // Calculate profile evaluation scores
     const profileEvaluation = calculateProfileEvaluation({
       profileData,
@@ -66,16 +106,21 @@ export async function handler(event, context) {
       positionsData,
       educationData
     });
+    console.log("Profile evaluation result:", profileEvaluation);
 
+    console.log("\n=== CALCULATING SUMMARY KPIS ===");
     // Calculate summary KPIs
     const summaryKPIs = calculateSummaryKPIs({
       connectionsData,
       postsData,
       changelogData
     });
+    console.log("Summary KPIs result:", summaryKPIs);
 
+    console.log("\n=== CALCULATING MINI TRENDS ===");
     // Calculate mini trends
     const miniTrends = calculateMiniTrends(changelogData);
+    console.log("Mini trends result:", miniTrends);
 
     const result = {
       profileEvaluation,
@@ -84,7 +129,18 @@ export async function handler(event, context) {
       lastUpdated: new Date().toISOString()
     };
 
+    console.log("\n=== FINAL RESULT ===");
     console.log("Dashboard Data: Analysis complete");
+    console.log("Final result structure:", {
+      hasProfileEvaluation: !!result.profileEvaluation,
+      hasSummaryKPIs: !!result.summaryKPIs,
+      hasMiniTrends: !!result.miniTrends,
+      lastUpdated: result.lastUpdated,
+      profileEvaluationKeys: result.profileEvaluation ? Object.keys(result.profileEvaluation) : [],
+      summaryKPIsKeys: result.summaryKPIs ? Object.keys(result.summaryKPIs) : [],
+      miniTrendsKeys: result.miniTrends ? Object.keys(result.miniTrends) : []
+    });
+    console.log("Result JSON length:", JSON.stringify(result).length);
 
     return {
       statusCode: 200,
@@ -113,8 +169,20 @@ export async function handler(event, context) {
 }
 
 async function fetchLinkedInData(authorization, endpoint, domain = null, extraParams = "") {
+  console.log(`\n=== FETCHING LINKEDIN DATA ===`);
+  console.log(`Endpoint: ${endpoint}`);
+  console.log(`Domain: ${domain}`);
+  console.log(`Extra params: ${extraParams}`);
+  
   try {
-    let url = `/.netlify/functions/${endpoint}`;
+    // Determine base URL based on environment
+    const baseUrl = process.env.NETLIFY_DEV === "true" 
+      ? "http://localhost:8888/.netlify/functions" 
+      : process.env.URL 
+        ? `${process.env.URL}/.netlify/functions`
+        : `/.netlify/functions`;
+    
+    let url = `${baseUrl}/${endpoint}`;
     const params = new URLSearchParams();
     
     if (domain) {
@@ -132,6 +200,11 @@ async function fetchLinkedInData(authorization, endpoint, domain = null, extraPa
       url += `?${params.toString()}`;
     }
 
+    console.log(`Base URL: ${baseUrl}`);
+    console.log(`Full URL: ${url}`);
+    console.log(`Authorization header present: ${!!authorization}`);
+    console.log(`Authorization header length: ${authorization ? authorization.length : 0}`);
+
     const response = await fetch(url, {
       headers: {
         Authorization: authorization,
@@ -139,17 +212,42 @@ async function fetchLinkedInData(authorization, endpoint, domain = null, extraPa
       },
     });
 
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+    console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch ${endpoint} ${domain}: ${response.status} ${response.statusText}`, errorText);
+      console.error(`❌ Failed to fetch ${endpoint} ${domain}: ${response.status} ${response.statusText}`);
+      console.error(`Error response body:`, errorText);
       return null;
     }
 
     const data = await response.json();
+    console.log(`✅ Successfully fetched ${endpoint} ${domain}`);
+    console.log(`Response data structure:`, {
+      hasElements: !!data.elements,
+      elementsCount: data.elements ? data.elements.length : 0,
+      hasError: !!data.error,
+      dataKeys: Object.keys(data)
+    });
+    
+    if (data.elements && data.elements.length > 0) {
+      console.log(`Sample element structure:`, {
+        firstElementKeys: Object.keys(data.elements[0]),
+        snapshotDomain: data.elements[0].snapshotDomain,
+        hasSnapshotData: !!data.elements[0].snapshotData,
+        snapshotDataLength: data.elements[0].snapshotData ? data.elements[0].snapshotData.length : 0
+      });
+      
+      if (data.elements[0].snapshotData && data.elements[0].snapshotData.length > 0) {
+        console.log(`Sample snapshot data keys:`, Object.keys(data.elements[0].snapshotData[0]));
+      }
+    }
     
     return data;
   } catch (error) {
-    console.error(`Error fetching ${endpoint} ${domain}:`, error);
+    console.error(`❌ Error fetching ${endpoint} ${domain}:`, error);
+    console.error(`Error stack:`, error.stack);
     return null;
   }
 }
@@ -797,5 +895,67 @@ function getScoreExplanations() {
     mutualInteractions: "Engagement you give to others (likes, comments)",
     profileVisibility: "Profile views and search appearances from LinkedIn",
     professionalBrand: "Professional signals (headline, industry, current role)"
+  };
+}
+
+function getMockDashboardResponse() {
+  console.log("=== GENERATING MOCK DASHBOARD DATA ===");
+  
+  const mockResult = {
+    profileEvaluation: {
+      scores: {
+        profileCompleteness: 8,
+        postingActivity: 6,
+        engagementQuality: 7,
+        networkGrowth: 5,
+        audienceRelevance: 7,
+        contentDiversity: 6,
+        engagementRate: 8,
+        mutualInteractions: 7,
+        profileVisibility: 6,
+        professionalBrand: 9
+      },
+      overallScore: 6.9,
+      explanations: getScoreExplanations()
+    },
+    summaryKPIs: {
+      totalConnections: 1247,
+      postsLast30Days: 12,
+      engagementRate: "4.2%",
+      connectionsLast30Days: 23
+    },
+    miniTrends: {
+      posts: [
+        { date: 'Day 1', value: 2 },
+        { date: 'Day 2', value: 0 },
+        { date: 'Day 3', value: 1 },
+        { date: 'Day 4', value: 3 },
+        { date: 'Day 5', value: 1 },
+        { date: 'Day 6', value: 0 },
+        { date: 'Day 7', value: 2 }
+      ],
+      engagements: [
+        { date: 'Day 1', value: 45 },
+        { date: 'Day 2', value: 23 },
+        { date: 'Day 3', value: 67 },
+        { date: 'Day 4', value: 89 },
+        { date: 'Day 5', value: 34 },
+        { date: 'Day 6', value: 12 },
+        { date: 'Day 7', value: 56 }
+      ]
+    },
+    lastUpdated: new Date().toISOString()
+  };
+
+  console.log("Mock data generated:", mockResult);
+
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+    body: JSON.stringify(mockResult),
   };
 }
