@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, TrendingUp, Users, MessageCircle, Eye, BarChart3, Heart, FileText, Info, RefreshCw, AlertCircle } from 'lucide-react';
+import { Calendar, TrendingUp, Users, MessageCircle, Eye, BarChart3, Heart, FileText, Info, RefreshCw, AlertCircle, Target, Activity } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -107,7 +107,10 @@ export const Analytics = () => {
       className="space-y-6"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Detailed Analytics</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Analytics Deep Dive</h2>
+          <p className="text-gray-600 mt-1">Detailed insights into your LinkedIn performance</p>
+        </div>
         <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
@@ -129,6 +132,54 @@ export const Analytics = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Dashboard Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card variant="glass" className="p-4 border-l-4 border-blue-500">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-50 rounded-lg mr-3">
+              <Target size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Profile Strength</div>
+              <div className="text-xl font-bold">85%</div>
+            </div>
+          </div>
+        </Card>
+        <Card variant="glass" className="p-4 border-l-4 border-green-500">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-50 rounded-lg mr-3">
+              <Users size={20} className="text-green-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Network Quality</div>
+              <div className="text-xl font-bold">7/10</div>
+            </div>
+          </div>
+        </Card>
+        <Card variant="glass" className="p-4 border-l-4 border-purple-500">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-50 rounded-lg mr-3">
+              <Activity size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Social Activity</div>
+              <div className="text-xl font-bold">3/10</div>
+            </div>
+          </div>
+        </Card>
+        <Card variant="glass" className="p-4 border-l-4 border-orange-500">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-50 rounded-lg mr-3">
+              <BarChart3 size={20} className="text-orange-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Content Performance</div>
+              <div className="text-xl font-bold">5/10</div>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Debug Panel */}
@@ -155,6 +206,25 @@ export const Analytics = () => {
           </div>
         </Card>
       )}
+
+      {/* Key Insights */}
+      <Card variant="glass" className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Key Insights & Recommendations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Profile Optimization</h4>
+            <p className="text-sm text-blue-700">Your profile strength is good but can be improved by adding more skills and getting endorsements.</p>
+          </div>
+          <div className="p-4 bg-green-50 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">Network Growth</h4>
+            <p className="text-sm text-green-700">Consider connecting with more professionals in your industry to expand your network quality.</p>
+          </div>
+          <div className="p-4 bg-purple-50 rounded-lg">
+            <h4 className="font-medium text-purple-900 mb-2">Content Strategy</h4>
+            <p className="text-sm text-purple-700">Increase posting frequency and engage more with others' content to boost social activity.</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

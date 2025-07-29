@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Zap, RefreshCw, Database } from "lucide-react";
+import { AlertCircle, Zap, RefreshCw, Database, Target, Users, Activity, BarChart3 } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useAuthStore } from "../../stores/authStore";
 import { useDashboardData } from "../../hooks/useDashboardData";
-import { ProfileEvaluationCard } from "./ProfileEvaluationCard";
-import { SummaryKPIsCard } from "./SummaryKPIsCard";
-import { MiniTrendsCard } from "./MiniTrendsCard";
+import { MetricCard } from "./MetricCard";
+import { ActivityOverview } from "./ActivityOverview";
+import { ProfileProgress } from "./ProfileProgress";
+import { PerformanceTrends } from "./PerformanceTrends";
 import { useAppStore } from "../../stores/appStore";
 
 export const Dashboard = () => {
@@ -215,18 +216,75 @@ export const Dashboard = () => {
         </Card>
       )}
 
-      {/* Profile Evaluation */}
-      <ProfileEvaluationCard
-        scores={dashboardData.profileEvaluation.scores}
-        overallScore={dashboardData.profileEvaluation.overallScore}
-        explanations={dashboardData.profileEvaluation.explanations}
-      />
-
-      {/* Summary KPIs and Mini Trends */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SummaryKPIsCard kpis={dashboardData.summaryKPIs} />
-        <MiniTrendsCard trends={dashboardData.miniTrends} />
+      {/* Main Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Profile Strength"
+          value={`${dashboardData.profileEvaluation.overallScore * 10}%`}
+          subtitle="Overall profile quality"
+          changeText="0 new this month"
+          icon={Target}
+          borderColor="border-blue-500"
+          iconColor="text-blue-600"
+          bgColor="bg-blue-50"
+        />
+        <MetricCard
+          title="Network Quality"
+          value={`${Math.min(10, Math.floor(dashboardData.summaryKPIs.totalConnections / 100))}/10`}
+          subtitle="Connection strength"
+          changeText="0 new this month"
+          icon={Users}
+          borderColor="border-green-500"
+          iconColor="text-green-600"
+          bgColor="bg-green-50"
+        />
+        <MetricCard
+          title="Social Activity"
+          value="0/10"
+          subtitle="Engagement level"
+          changeText="0 interactions"
+          icon={Activity}
+          borderColor="border-purple-500"
+          iconColor="text-purple-600"
+          bgColor="bg-purple-50"
+        />
+        <MetricCard
+          title="Content Performance"
+          value="0/10"
+          subtitle="Post effectiveness"
+          changeText="0 posts published"
+          icon={BarChart3}
+          borderColor="border-orange-500"
+          iconColor="text-orange-600"
+          bgColor="bg-orange-50"
+        />
       </div>
+
+      {/* Activity Overview and Profile Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ActivityOverview
+            postsCreated={dashboardData.summaryKPIs.postsLast30Days}
+            commentsGiven={0}
+            likesGiven={0}
+            totalPosts={dashboardData.summaryKPIs.postsLast30Days}
+          />
+        </div>
+        <div>
+          <ProfileProgress
+            percentage={dashboardData.profileEvaluation.overallScore * 10}
+          />
+        </div>
+      </div>
+
+      {/* Performance Trends */}
+      <PerformanceTrends
+        data={dashboardData.miniTrends.posts.map((post, index) => ({
+          date: `Day ${index + 1}`,
+          value: post.value
+        }))}
+        change={5.2}
+      />
 
       {/* Quick Actions */}
       <Card variant="glass" className="p-6">
@@ -236,11 +294,11 @@ export const Dashboard = () => {
             Quick Actions
           </h3>
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+            className="p-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
             onClick={() => setCurrentModule("analytics")}
           >
             📊 View Detailed Analytics
@@ -248,26 +306,10 @@ export const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+            className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
             onClick={() => setCurrentModule("postgen")}
           >
             ✍️ Generate New Post
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
-            onClick={() => setCurrentModule("postpulse")}
-          >
-            📈 Analyze Posts (PostPulse)
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
-            onClick={() => setCurrentModule("scheduler")}
-          >
-            📅 Schedule Content
           </motion.button>
         </div>
       </Card>
