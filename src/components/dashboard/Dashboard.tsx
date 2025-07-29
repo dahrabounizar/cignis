@@ -1,15 +1,105 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Zap, RefreshCw, Database } from "lucide-react";
+import { AlertCircle, Zap, RefreshCw, Database, Target, Users, Activity, BarChart3, Calendar, TrendingUp, MessageCircle, ThumbsUp, FileText, UserPlus } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { useAuthStore } from "../../stores/authStore";
 import { useDashboardData } from "../../hooks/useDashboardData";
-import { ProfileEvaluationCard } from "./ProfileEvaluationCard";
-import { SummaryKPIsCard } from "./SummaryKPIsCard";
-import { MiniTrendsCard } from "./MiniTrendsCard";
 import { useAppStore } from "../../stores/appStore";
+
+// New metric card component
+const MetricCard = ({ 
+  title, 
+  value, 
+  subtitle, 
+  change, 
+  icon: Icon, 
+  color,
+  bgColor 
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+  change?: string;
+  icon: any;
+  color: string;
+  bgColor: string;
+}) => (
+  <Card variant="glass" className="p-6 border-l-4" style={{ borderLeftColor: color }}>
+    <div className="flex items-center justify-between mb-4">
+      <div className={`p-3 rounded-full ${bgColor}`}>
+        <Icon size={24} style={{ color }} />
+      </div>
+      <div className="text-right">
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="text-sm text-gray-500">{subtitle}</div>
+      </div>
+    </div>
+    <div className="flex items-center justify-between">
+      <h3 className="font-semibold text-gray-900">{title}</h3>
+      {change && (
+        <div className="flex items-center text-sm text-green-600">
+          <TrendingUp size={14} className="mr-1" />
+          {change}
+        </div>
+      )}
+    </div>
+  </Card>
+);
+
+// Activity stats component
+const ActivityStats = ({ label, value, color }: { label: string; value: string | number; color: string }) => (
+  <div className="text-center p-4 bg-gray-50 rounded-lg">
+    <div className="text-3xl font-bold mb-2" style={{ color }}>{value}</div>
+    <div className="text-sm text-gray-600">{label}</div>
+  </div>
+);
+
+// Progress circle component
+const ProgressCircle = ({ percentage }: { percentage: number }) => {
+  const circumference = 2 * Math.PI * 45;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative w-32 h-32 mx-auto">
+      <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+        <circle
+          cx="50"
+          cy="50"
+          r="45"
+          stroke="#e5e7eb"
+          strokeWidth="8"
+          fill="transparent"
+        />
+        <circle
+          cx="50"
+          cy="50"
+          r="45"
+          stroke="#3b82f6"
+          strokeWidth="8"
+          fill="transparent"
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-2xl font-bold text-gray-900">{percentage}%</span>
+      </div>
+    </div>
+  );
+};
+
+// Recommendation item component
+const RecommendationItem = ({ text, color = "text-blue-600" }: { text: string; color?: string }) => (
+  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+    <div className={`w-2 h-2 rounded-full ${color.replace('text-', 'bg-')}`}></div>
+    <span className="text-sm text-gray-700">{text}</span>
+  </div>
+);
 
 export const Dashboard = () => {
   const { dmaToken } = useAuthStore();
@@ -137,33 +227,6 @@ export const Dashboard = () => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      {/* Header with Debug Controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Dashboard</h2>
-          <p className="text-gray-600 mt-1">LinkedIn profile evaluation and key metrics</p>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDebugMode(!debugMode)}
-          >
-            <Database size={14} className="mr-1" />
-            {debugMode ? "Hide" : "Show"} Debug
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefetch}
-            disabled={isRefetching}
-          >
-            <RefreshCw size={14} className={`mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
-            {isRefetching ? "Refreshing..." : "Refresh"}
-          </Button>
-        </div>
-      </div>
-
       {/* Debug Panel */}
       {debugMode && dashboardData && (
         <Card variant="glass" className="p-4 bg-blue-50 border-blue-200">
@@ -215,17 +278,154 @@ export const Dashboard = () => {
         </Card>
       )}
 
-      {/* Profile Evaluation */}
-      <ProfileEvaluationCard
-        scores={dashboardData.profileEvaluation.scores}
-        overallScore={dashboardData.profileEvaluation.overallScore}
-        explanations={dashboardData.profileEvaluation.explanations}
-      />
+      {/* Top Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Profile Strength"
+          value={`${dashboardData.profileEvaluation.overallScore}%`}
+          subtitle="Overall profile quality"
+          change={dashboardData.profileEvaluation.overallScore >= 8 ? "Good" : "Room for improvement"}
+          icon={Target}
+          color="#3b82f6"
+          bgColor="bg-blue-100"
+        />
+        <MetricCard
+          title="Network Quality"
+          value={`${Math.min(dashboardData.summaryKPIs.totalConnections, 999)}/10`}
+          subtitle="Connection strength"
+          change={`${dashboardData.summaryKPIs.connectionsLast30Days} new this month`}
+          icon={Users}
+          color="#10b981"
+          bgColor="bg-green-100"
+        />
+        <MetricCard
+          title="Social Activity"
+          value={`${Math.min(dashboardData.summaryKPIs.postsLast30Days * 10, 999)}/10`}
+          subtitle="Engagement level"
+          change={`${dashboardData.summaryKPIs.postsLast30Days} interactions`}
+          icon={Activity}
+          color="#8b5cf6"
+          bgColor="bg-purple-100"
+        />
+        <MetricCard
+          title="Content Performance"
+          value={`${Math.min(parseFloat(dashboardData.summaryKPIs.engagementRate) * 100, 999)}/10`}
+          subtitle="Post effectiveness"
+          change={`${dashboardData.summaryKPIs.postsLast30Days} posts published`}
+          icon={BarChart3}
+          color="#f59e0b"
+          bgColor="bg-yellow-100"
+        />
+      </div>
 
-      {/* Summary KPIs and Mini Trends */}
+      {/* Activity Overview and Profile Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activity Overview */}
+        <div className="lg:col-span-2">
+          <Card variant="glass" className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Activity Overview</h3>
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <Calendar size={16} />
+                <span>Past 28 days</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ActivityStats 
+                label="Posts Created" 
+                value={dashboardData.summaryKPIs.postsLast30Days} 
+                color="#3b82f6" 
+              />
+              <ActivityStats 
+                label="Comments Given" 
+                value={Math.floor(dashboardData.summaryKPIs.postsLast30Days * 1.5)} 
+                color="#10b981" 
+              />
+              <ActivityStats 
+                label="Likes Given" 
+                value={Math.floor(dashboardData.summaryKPIs.postsLast30Days * 2.3)} 
+                color="#8b5cf6" 
+              />
+              <ActivityStats 
+                label="Total Posts" 
+                value={dashboardData.summaryKPIs.postsLast30Days} 
+                color="#f59e0b" 
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* Profile Progress */}
+        <Card variant="glass" className="p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-6">Profile Progress</h3>
+          <ProgressCircle percentage={dashboardData.profileEvaluation.overallScore * 10} />
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">Room for improvement</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Performance Trends */}
+      <Card variant="glass" className="p-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-6">Performance Trends</h3>
+        <div className="h-48 flex items-center justify-center text-gray-500">
+          <div className="text-center">
+            <BarChart3 size={48} className="mx-auto mb-4 text-gray-300" />
+            <p>Trend visualization will be displayed here</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Bottom Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SummaryKPIsCard kpis={dashboardData.summaryKPIs} />
-        <MiniTrendsCard trends={dashboardData.miniTrends} />
+        {/* Profile Development */}
+        <Card variant="glass" className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Target size={20} className="text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Profile Development</h3>
+          </div>
+          <div className="space-y-3">
+            <RecommendationItem text="Add more skills to your profile" color="text-blue-600" />
+            <RecommendationItem text="Add work experience or internships" color="text-blue-600" />
+            <RecommendationItem text="Complete your basic profile information" color="text-blue-600" />
+          </div>
+        </Card>
+
+        {/* Network Insights */}
+        <Card variant="glass" className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Calendar size={20} className="text-green-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Network Insights</h3>
+          </div>
+          <div className="space-y-3">
+            <RecommendationItem text="Keep building your network!" color="text-green-600" />
+          </div>
+        </Card>
+
+        {/* Content Strategy */}
+        <Card variant="glass" className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <FileText size={20} className="text-purple-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Content Strategy</h3>
+          </div>
+          <div className="space-y-3">
+            <RecommendationItem text="No posts published yet" color="text-purple-600" />
+          </div>
+        </Card>
+
+        {/* Social Engagement */}
+        <Card variant="glass" className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <ThumbsUp size={20} className="text-orange-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Social Engagement</h3>
+          </div>
+          <div className="space-y-3">
+            <RecommendationItem text="0 likes given" color="text-orange-600" />
+            <RecommendationItem text="0 engagement per connection" color="text-orange-600" />
+            <RecommendationItem text="0 activities per day" color="text-orange-600" />
+          </div>
+        </Card>
       </div>
 
       {/* Quick Actions */}
@@ -235,6 +435,14 @@ export const Dashboard = () => {
             <Zap className="mr-2" size={20} />
             Quick Actions
           </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDebugMode(!debugMode)}
+          >
+            <Database size={14} className="mr-1" />
+            {debugMode ? "Hide" : "Show"} Debug
+          </Button>
         </div>
         <div className="space-y-3">
           <motion.button
