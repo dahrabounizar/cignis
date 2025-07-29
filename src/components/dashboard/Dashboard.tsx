@@ -183,11 +183,31 @@ export const Dashboard = () => {
           <div className="text-sm space-y-2">
             <div>Last Updated: {dashboardData.lastUpdated}</div>
             <div>DMA Token: {dmaToken ? 'Present' : 'Missing'}</div>
+            
+            {/* Enhanced Debug Information */}
+            {dashboardData.debug && (
+              <div className="mt-4 p-3 bg-white rounded border">
+                <h4 className="font-semibold mb-2">Data Availability:</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>Profile Data: {dashboardData.debug.dataAvailability.profileData ? '✅ Available' : '❌ Missing'}</div>
+                  <div>Connections Data: {dashboardData.debug.dataAvailability.connectionsData ? '✅ Available' : '❌ Missing'}</div>
+                  <div>Posts Data: {dashboardData.debug.dataAvailability.postsData ? '✅ Available' : '❌ Missing'}</div>
+                  <div>Changelog Data: {dashboardData.debug.dataAvailability.changelogData ? '✅ Available' : '❌ Missing'}</div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <strong>Profile Evaluation:</strong>
                 <div>Overall Score: {dashboardData.profileEvaluation.overallScore}/10</div>
-                <div>Scores: {Object.values(dashboardData.profileEvaluation.scores).join(', ')}</div>
+                <div>Top Scores: 
+                  {Object.entries(dashboardData.profileEvaluation.scores)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 3)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ')}
+                </div>
               </div>
               <div>
                 <strong>Summary KPIs:</strong>
@@ -198,9 +218,9 @@ export const Dashboard = () => {
               </div>
             </div>
             <div>
-              <strong>Mini Trends:</strong>
-              <div>Posts: {dashboardData.miniTrends.posts.map(p => p.value).join(', ')}</div>
-              <div>Engagements: {dashboardData.miniTrends.engagements.map(e => e.value).join(', ')}</div>
+              <strong>Mini Trends (7-day totals):</strong>
+              <div>Posts: {dashboardData.miniTrends.posts.reduce((sum, p) => sum + p.value, 0)} total</div>
+              <div>Engagements: {dashboardData.miniTrends.engagements.reduce((sum, e) => sum + e.value, 0)} total</div>
             </div>
             <div className="mt-4">
               <Button
