@@ -1,6 +1,6 @@
 // netlify/functions/linkedin-media-download.js
 
-export async function handler(event) {
+exports.handler = async function(event) {
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return {

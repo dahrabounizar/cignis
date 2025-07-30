@@ -1,4 +1,4 @@
-export async function handler(event, context) {
+exports.handler = async function(event, context) {
   console.log('OAuth callback called with:', event.queryStringParameters);
   
   const { code, state } = event.queryStringParameters || {};

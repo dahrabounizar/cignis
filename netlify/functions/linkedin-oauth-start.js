@@ -1,4 +1,4 @@
-export async function handler(event, context) {
+exports.handler = async function(event, context) {
   console.log('OAuth start called with:', event.queryStringParameters);
   
   const { type = 'basic' } = event.queryStringParameters || {};
