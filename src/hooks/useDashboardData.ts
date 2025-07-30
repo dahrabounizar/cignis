@@ -50,12 +50,42 @@ export const useDashboardData = () => {
         throw new Error('DMA token is required for dashboard data');
       }
       
-      const response = await fetch('/.netlify/functions/dashboard-data', {
+      // First try the regular dashboard-data endpoint
+      let response = await fetch('/.netlify/functions/dashboard-data', {
         headers: {
           'Authorization': `Bearer ${dmaToken}`,
           'Content-Type': 'application/json',
         },
       });
+      
+      // If we get a 428 (Precondition Required), it means DMA is not enabled
+      // Try the fixed endpoint that handles DMA enabling
+      if (response.status === 428) {
+        console.log('DMA not enabled, attempting to enable...');
+        
+        // First try to enable DMA
+        const dmaEnableResponse = await fetch('/.netlify/functions/linkedin-dma-enable', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${dmaToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!dmaEnableResponse.ok) {
+          const dmaError = await dmaEnableResponse.json();
+          console.error('Failed to enable DMA:', dmaError);
+          throw new Error(`Failed to enable DMA: ${JSON.stringify(dmaError)}`);
+        }
+        
+        // Now try the fixed dashboard endpoint
+        response = await fetch('/.netlify/functions/dashboard-data-fixed', {
+          headers: {
+            'Authorization': `Bearer ${dmaToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
