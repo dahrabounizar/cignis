@@ -11,7 +11,7 @@ export const SummaryKPIsCard = ({ kpis }: SummaryKPIsCardProps) => {
   const kpiItems = [
     {
       label: 'Total Connections',
-      value: kpis.totalConnections.toLocaleString(),
+      value: (kpis?.totalConnections || 0).toLocaleString(),
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-100',
@@ -19,7 +19,7 @@ export const SummaryKPIsCard = ({ kpis }: SummaryKPIsCardProps) => {
     },
     {
       label: 'Posts (30 days)',
-      value: kpis.postsLast30Days,
+      value: kpis?.postsLast30Days || 0,
       icon: FileText,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-100',
@@ -27,7 +27,7 @@ export const SummaryKPIsCard = ({ kpis }: SummaryKPIsCardProps) => {
     },
     {
       label: 'Engagement Rate',
-      value: kpis.engagementRate,
+      value: kpis?.engagementRate || '0%',
       icon: Heart,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-100',
@@ -35,7 +35,7 @@ export const SummaryKPIsCard = ({ kpis }: SummaryKPIsCardProps) => {
     },
     {
       label: 'New Connections',
-      value: kpis.connectionsLast30Days,
+      value: kpis?.connectionsLast30Days || 0,
       icon: UserPlus,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-100',

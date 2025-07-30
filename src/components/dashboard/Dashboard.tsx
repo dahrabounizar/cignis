@@ -86,6 +86,11 @@ export const Dashboard = () => {
         <LoadingSpinner size="lg" />
         <p className="mt-4 text-gray-600">Loading LinkedIn analytics...</p>
         <p className="text-sm text-gray-500">This may take a moment for larger accounts</p>
+        {dmaToken && (
+          <p className="text-xs text-gray-400 mt-2">
+            DMA token present - fetching real-time data
+          </p>
+        )}
       </div>
     );
   }
@@ -142,6 +147,11 @@ export const Dashboard = () => {
         <div>
           <h2 className="text-2xl font-bold">Dashboard</h2>
           <p className="text-gray-600 mt-1">LinkedIn profile evaluation and key metrics</p>
+          {dashboardData?.summaryKPIs?.totalConnections === 1247 && (
+            <p className="text-xs text-blue-600 mt-1 font-medium">
+              📊 Showing demo data - connect your LinkedIn account for real metrics
+            </p>
+          )}
         </div>
         <div className="flex space-x-2">
           <Button

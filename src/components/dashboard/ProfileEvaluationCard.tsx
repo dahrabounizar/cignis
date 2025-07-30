@@ -36,16 +36,16 @@ export const ProfileEvaluationCard = ({
   };
 
   const scoreItems = [
-    { key: 'profileCompleteness', label: 'Profile Completeness', score: scores.profileCompleteness },
-    { key: 'postingActivity', label: 'Posting Activity', score: scores.postingActivity },
-    { key: 'engagementQuality', label: 'Engagement Quality', score: scores.engagementQuality },
-    { key: 'networkGrowth', label: 'Network Growth', score: scores.networkGrowth },
-    { key: 'audienceRelevance', label: 'Audience Relevance', score: scores.audienceRelevance },
-    { key: 'contentDiversity', label: 'Content Diversity', score: scores.contentDiversity },
-    { key: 'engagementRate', label: 'Engagement Rate', score: scores.engagementRate },
-    { key: 'mutualInteractions', label: 'Mutual Interactions', score: scores.mutualInteractions },
-    { key: 'profileVisibility', label: 'Profile Visibility', score: scores.profileVisibility },
-    { key: 'professionalBrand', label: 'Professional Brand', score: scores.professionalBrand },
+    { key: 'profileCompleteness', label: 'Profile Completeness', score: scores?.profileCompleteness || 0 },
+    { key: 'postingActivity', label: 'Posting Activity', score: scores?.postingActivity || 0 },
+    { key: 'engagementQuality', label: 'Engagement Quality', score: scores?.engagementQuality || 0 },
+    { key: 'networkGrowth', label: 'Network Growth', score: scores?.networkGrowth || 0 },
+    { key: 'audienceRelevance', label: 'Audience Relevance', score: scores?.audienceRelevance || 0 },
+    { key: 'contentDiversity', label: 'Content Diversity', score: scores?.contentDiversity || 0 },
+    { key: 'engagementRate', label: 'Engagement Rate', score: scores?.engagementRate || 0 },
+    { key: 'mutualInteractions', label: 'Mutual Interactions', score: scores?.mutualInteractions || 0 },
+    { key: 'profileVisibility', label: 'Profile Visibility', score: scores?.profileVisibility || 0 },
+    { key: 'professionalBrand', label: 'Professional Brand', score: scores?.professionalBrand || 0 },
   ];
 
   return (

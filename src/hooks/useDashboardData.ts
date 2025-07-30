@@ -60,6 +60,21 @@ export const useDashboardData = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Dashboard API error:', response.status, errorText);
+        
+        // For 401 errors, still try to parse response as it might contain demo data
+        if (response.status === 401) {
+          console.log('Dashboard: Authentication issue, but checking for demo data');
+          try {
+            const data = JSON.parse(errorText);
+            if (data.profileEvaluation && data.summaryKPIs && data.miniTrends) {
+              console.log('Dashboard: Using demo data from error response');
+              return data;
+            }
+          } catch (parseError) {
+            console.log('Dashboard: Could not parse error response as JSON');
+          }
+        }
+        
         throw new Error(`Dashboard API error: ${response.status} - ${errorText}`);
       }
 

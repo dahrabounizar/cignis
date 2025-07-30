@@ -16,14 +16,14 @@ export const MiniTrendsCard = ({ trends }: MiniTrendsCardProps) => {
   const { setCurrentModule } = useAppStore();
 
   const calculateTrend = (data: MiniTrend[]) => {
-    if (data.length < 2) return 0;
-    const recent = data.slice(-3).reduce((sum, item) => sum + item.value, 0);
-    const previous = data.slice(-6, -3).reduce((sum, item) => sum + item.value, 0);
+    if (!data || data.length < 2) return 0;
+    const recent = data.slice(-3).reduce((sum, item) => sum + (item?.value || 0), 0);
+    const previous = data.slice(-6, -3).reduce((sum, item) => sum + (item?.value || 0), 0);
     return recent - previous;
   };
 
-  const postsTrend = calculateTrend(trends.posts);
-  const engagementsTrend = calculateTrend(trends.engagements);
+  const postsTrend = calculateTrend(trends?.posts || []);
+  const engagementsTrend = calculateTrend(trends?.engagements || []);
 
   return (
     <Card 
@@ -56,7 +56,7 @@ export const MiniTrendsCard = ({ trends }: MiniTrendsCardProps) => {
           </div>
           <div className="h-20">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trends.posts}>
+              <LineChart data={trends?.posts || []}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
                 <Line 
@@ -90,7 +90,7 @@ export const MiniTrendsCard = ({ trends }: MiniTrendsCardProps) => {
           </div>
           <div className="h-20">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trends.engagements}>
+              <LineChart data={trends?.engagements || []}>
                 <XAxis dataKey="date" hide />
                 <YAxis hide />
                 <Line 
