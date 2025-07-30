@@ -9,6 +9,8 @@ import { useDashboardData } from "../../hooks/useDashboardData";
 import { ProfileEvaluationCard } from "./ProfileEvaluationCard";
 import { SummaryKPIsCard } from "./SummaryKPIsCard";
 import { MiniTrendsCard } from "./MiniTrendsCard";
+import { LinkedInProfileCard } from "./LinkedInProfileCard";
+import { LinkedInDataCard } from "./LinkedInDataCard";
 import { useAppStore } from "../../stores/appStore";
 
 export const Dashboard = () => {
@@ -214,6 +216,12 @@ export const Dashboard = () => {
           </div>
         </Card>
       )}
+
+      {/* LinkedIn Profile Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LinkedInProfileCard />
+        <LinkedInDataCard />
+      </div>
 
       {/* Profile Evaluation */}
       <ProfileEvaluationCard
