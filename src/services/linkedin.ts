@@ -46,6 +46,61 @@ export const fetchLinkedInChangelog = async (
   return data;
 };
 
+// New function to check and enable DMA
+export const checkDmaStatus = async (token: string) => {
+  const response = await fetch(`${API_BASE}/linkedin-dma-enable`, {
+    method: "GET", // Just check, don't enable
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to check DMA status");
+  }
+
+  return response.json();
+};
+
+export const enableDmaArchiving = async (token: string) => {
+  const response = await fetch(`${API_BASE}/linkedin-dma-enable`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.details || "Failed to enable DMA archiving");
+  }
+
+  return response.json();
+};
+
+// New function to fetch dashboard data with DMA fixes
+export const fetchDashboardDataFixed = async (token: string) => {
+  const response = await fetch(`${API_BASE}/dashboard-data-fixed`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 428) {
+      // DMA not enabled
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`DMA_NOT_ENABLED: ${errorData.message || "DMA consent required"}`);
+    }
+    throw new Error("Failed to fetch dashboard data");
+  }
+
+  return response.json();
+};
+
 export const fetchLinkedInSnapshot = async (
   token: string,
   domain?: string,

@@ -42,7 +42,7 @@ export async function handler(event, context) {
     const response = await fetch(url, {
       headers: {
         Authorization: authorization,
-        "LinkedIn-Version": "202312",
+        "LinkedIn-Version": "202312", // Required for versioned REST
         "Content-Type": "application/json",
       },
     });

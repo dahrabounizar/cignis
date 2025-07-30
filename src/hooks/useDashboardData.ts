@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
+import { fetchDashboardDataFixed, enableDmaArchiving } from '../services/linkedin';
 
 export interface ProfileScore {
   profileCompleteness: number;
@@ -44,34 +45,39 @@ export const useDashboardData = () => {
   const { dmaToken } = useAuthStore();
   
   return useQuery({
-    queryKey: ['dashboard-data'],
+    queryKey: ['dashboard-data-fixed'],
     queryFn: async (): Promise<DashboardData> => {
       if (!dmaToken) {
         throw new Error('DMA token is required for dashboard data');
       }
       
-      const response = await fetch('/.netlify/functions/dashboard-data', {
-        headers: {
-          'Authorization': `Bearer ${dmaToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Dashboard API error:', response.status, errorText);
-        throw new Error(`Dashboard API error: ${response.status} - ${errorText}`);
+      try {
+        const data = await fetchDashboardDataFixed(dmaToken);
+        
+        // Validate the response structure
+        if (!data.profileEvaluation || !data.summaryKPIs || !data.miniTrends) {
+          console.error('Invalid dashboard data structure:', data);
+          throw new Error('Invalid dashboard data structure received');
+        }
+        
+        return data;
+      } catch (error) {
+        if (error.message.startsWith('DMA_NOT_ENABLED:')) {
+          // Try to enable DMA automatically
+          console.log('DMA not enabled, attempting to enable...');
+          try {
+            await enableDmaArchiving(dmaToken);
+            console.log('DMA enabled successfully, retrying data fetch...');
+            // Retry the data fetch after enabling DMA
+            const data = await fetchDashboardDataFixed(dmaToken);
+            return data;
+          } catch (enableError) {
+            console.error('Failed to enable DMA:', enableError);
+            throw new Error('DMA consent required. Please enable archiving permissions.');
+          }
+        }
+        throw error;
       }
-
-      const data = await response.json();
-      
-      // Validate the response structure
-      if (!data.profileEvaluation || !data.summaryKPIs || !data.miniTrends) {
-        console.error('Invalid dashboard data structure:', data);
-        throw new Error('Invalid dashboard data structure received');
-      }
-      
-      return data;
     },
     enabled: !!dmaToken,
     staleTime: 10 * 60 * 1000, // 10 minutes
