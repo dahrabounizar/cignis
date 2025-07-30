@@ -35,6 +35,11 @@ async function handler(event, context) {
   }
   const { authorization } = event.headers;
   const { domain } = event.queryStringParameters || {};
+  console.log("LinkedIn Snapshot Function - Domain:", domain);
+  console.log(
+    "LinkedIn Snapshot Function - Authorization header present:",
+    !!authorization
+  );
   if (!authorization) {
     return {
       statusCode: 401,
@@ -46,13 +51,30 @@ async function handler(event, context) {
     if (domain) {
       url += `&domain=${domain}`;
     }
+    console.log("LinkedIn Snapshot Function - Calling URL:", url);
     const response = await fetch(url, {
       headers: {
-        "Authorization": authorization,
+        Authorization: authorization,
         "LinkedIn-Version": "202312"
       }
     });
+    console.log(
+      "LinkedIn Snapshot Function - Response status:",
+      response.status
+    );
+    console.log(
+      "LinkedIn Snapshot Function - Response headers:",
+      Object.fromEntries(response.headers.entries())
+    );
     const data = await response.json();
+    console.log("LinkedIn Snapshot Function - Response data structure:", {
+      hasElements: !!data.elements,
+      elementsLength: data.elements?.length || 0,
+      hasSnapshotData: !!data.elements?.[0]?.snapshotData,
+      snapshotDataLength: data.elements?.[0]?.snapshotData?.length || 0,
+      firstElementKeys: data.elements?.[0] ? Object.keys(data.elements[0]) : [],
+      firstSnapshotDataKeys: data.elements?.[0]?.snapshotData?.[0] ? Object.keys(data.elements[0].snapshotData[0]) : []
+    });
     return {
       statusCode: 200,
       headers: {
@@ -63,13 +85,17 @@ async function handler(event, context) {
       body: JSON.stringify(data)
     };
   } catch (error) {
+    console.error("LinkedIn Snapshot Function - Error:", error);
     return {
       statusCode: 500,
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*"
       },
-      body: JSON.stringify({ error: "Failed to fetch LinkedIn snapshot data" })
+      body: JSON.stringify({
+        error: "Failed to fetch LinkedIn snapshot data",
+        details: error.message
+      })
     };
   }
 }
