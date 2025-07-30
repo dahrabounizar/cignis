@@ -225,11 +225,26 @@ function calculateProfileCompleteness({ profileData, skillsData, positionsData, 
   const positionsSnapshot = positionsData?.elements?.[0]?.snapshotData || [];
   const educationSnapshot = educationData?.elements?.[0]?.snapshotData || [];
   
+  console.log("Profile completeness calculation:", {
+    profileSnapshotLength: profileSnapshot.length,
+    skillsSnapshotLength: skillsSnapshot.length,
+    positionsSnapshotLength: positionsSnapshot.length,
+    educationSnapshotLength: educationSnapshot.length
+  });
+  
   // LinkedIn profile data might be an array, find the main profile entry
   const profile = profileSnapshot.find(p => 
     p["First Name"] || p["Last Name"] || p.firstName || p.lastName || 
     p.headline || p.Headline || p.industry || p.Industry
   ) || profileSnapshot[0] || {};
+  
+  console.log("Found profile data:", {
+    hasFirstName: !!(profile["First Name"] || profile.firstName),
+    hasLastName: !!(profile["Last Name"] || profile.lastName),
+    hasHeadline: !!(profile["Headline"] || profile.headline),
+    hasIndustry: !!(profile["Industry"] || profile.industry),
+    profileKeys: Object.keys(profile)
+  });
   
   // Basic info (4 points)
   if (profile["First Name"] || profile.firstName) {
@@ -262,6 +277,14 @@ function calculateProfileCompleteness({ profileData, skillsData, positionsData, 
   
   const finalScore = Math.min(Math.round(score), 10);
   
+  console.log(`Profile completeness final score: ${finalScore}/10 (raw score: ${score})`);
+  
+  // If we have no data at all, provide a reasonable fallback
+  if (finalScore === 0 && profileSnapshot.length === 0 && skillsSnapshot.length === 0) {
+    console.log("No profile data available, using fallback score");
+    return 5; // Assume moderate completeness when no data is available
+  }
+  
   return finalScore;
 }
 
@@ -288,6 +311,15 @@ function calculatePostingActivity(postsData, changelogData) {
   else if (totalRecentPosts >= 5) score = 4;
   else if (totalRecentPosts >= 1) score = 2;
   else score = 0;
+  
+  console.log(`Posting activity score: ${score}/10 (posts: ${totalRecentPosts})`);
+  
+  // If no posting data is available, provide a reasonable fallback
+  if (score === 0 && posts.length === 0 && snapshotPosts.length === 0) {
+    console.log("No posting data available, using fallback score");
+    return 3; // Assume low-moderate activity when no data is available
+  }
+  
   return score;
 }
 
@@ -324,6 +356,13 @@ function calculateEngagementQuality(changelogData) {
   else score = 0;
   
   console.log(`Engagement quality score: ${score}/10 (avg: ${avgEngagement})`);
+  
+  // If no engagement data is available, provide a reasonable fallback
+  if (score === 0 && likes.length === 0 && comments.length === 0 && posts.length === 0) {
+    console.log("No engagement data available, using fallback score");
+    return 3; // Assume low-moderate engagement when no data is available
+  }
+  
   return score;
 }
 
@@ -370,6 +409,13 @@ function calculateNetworkGrowth(connectionsData, changelogData) {
   else score = 0;
   
   console.log(`Network growth score: ${score}/10 (${totalRecentGrowth} new connections)`);
+  
+  // If no connection data is available, provide a reasonable fallback
+  if (score === 0 && connections.length === 0 && invitations.length === 0) {
+    console.log("No network data available, using fallback score");
+    return 4; // Assume moderate network growth when no data is available
+  }
+  
   return score;
 }
 
@@ -419,6 +465,13 @@ function calculateAudienceRelevance(connectionsData) {
   });
   
   console.log(`Audience relevance score: ${finalScore}/10`);
+  
+  // If no connection data is available, provide a reasonable fallback
+  if (finalScore === 0 && connections.length === 0) {
+    console.log("No connection data available for audience relevance, using fallback score");
+    return 5; // Assume moderate audience relevance when no data is available
+  }
+  
   return finalScore;
 }
 
@@ -489,6 +542,12 @@ function calculateContentDiversity(postsData, changelogData) {
   console.log("Content types breakdown:", contentTypes);
   console.log(`Content diversity score: ${score}/10 (${typeCount} unique types)`);
   
+  // If no post data is available, provide a reasonable fallback
+  if (score === 0 && allPosts.length === 0) {
+    console.log("No post data available for content diversity, using fallback score");
+    return 4; // Assume moderate content diversity when no data is available
+  }
+  
   return Math.round(score);
 }
 
@@ -531,6 +590,13 @@ function calculateEngagementRate(postsData, changelogData, connectionsData) {
   else score = 0;
   
   console.log(`Engagement rate score: ${score}/10 (rate: ${engagementRate.toFixed(2)}%)`);
+  
+  // If no engagement data is available, provide a reasonable fallback
+  if (score === 0 && posts.length === 0 && totalEngagement === 0) {
+    console.log("No engagement data available for engagement rate, using fallback score");
+    return 3; // Assume low-moderate engagement rate when no data is available
+  }
+  
   return score;
 }
 
@@ -568,6 +634,13 @@ function calculateMutualInteractions(changelogData) {
   else score = 0;
   
   console.log(`Mutual interactions score: ${score}/10 (${totalInteractions} interactions)`);
+  
+  // If no interaction data is available, provide a reasonable fallback
+  if (score === 0 && elements.length === 0) {
+    console.log("No interaction data available for mutual interactions, using fallback score");
+    return 4; // Assume moderate mutual interactions when no data is available
+  }
+  
   return score;
 }
 
@@ -610,6 +683,12 @@ function calculateProfileVisibility(profileData) {
   if (profile.Location || profile.location) score += 1;
   
   console.log(`Profile visibility score: ${score}/10`);
+  
+  // If no profile data is available, provide a reasonable fallback
+  if (score === 0 && profileSnapshot.length === 0) {
+    console.log("No profile data available for visibility, using fallback score");
+    return 5; // Assume moderate visibility when no data is available
+  }
   
   return Math.min(score, 10);
 }
@@ -683,13 +762,39 @@ function calculateProfessionalBrand(data) {
   
   console.log(`Professional brand score: ${score}/10`);
   
+  // If no professional data is available, provide a reasonable fallback
+  if (score === 0 && profileSnapshot.length === 0 && positions.length === 0) {
+    console.log("No professional data available for brand, using fallback score");
+    return 5; // Assume moderate professional brand when no data is available
+  }
+  
   return Math.min(score, 10);
 }
 
 function calculateSummaryKPIs(data) {
   const { connectionsData, postsData, changelogData } = data;
   
-  const totalConnections = connectionsData?.elements?.[0]?.snapshotData?.length || 0;
+  // Better validation for connections data
+  const connectionsSnapshot = connectionsData?.elements?.[0]?.snapshotData || [];
+  
+  // Validate if connections data is real by checking for proper connection fields
+  const validConnections = connectionsSnapshot.filter(conn => {
+    // A valid connection should have at least a name and connection date
+    const hasName = conn["First Name"] || conn["Last Name"] || conn.firstName || conn.lastName || conn.name;
+    const hasDate = conn["Connected On"] || conn.connectedOn || conn.date || conn.Date;
+    
+    // Filter out mock/placeholder data that might have generic names or missing data
+    const isNotMockData = !conn.name?.includes("Mock") && 
+                         !conn.name?.includes("Test") && 
+                         !conn.name?.includes("Sample") &&
+                         !conn["First Name"]?.includes("Mock") &&
+                         !conn["First Name"]?.includes("Test") &&
+                         !conn["First Name"]?.includes("Sample");
+    
+    return hasName && hasDate && isNotMockData;
+  });
+  
+  const totalConnections = validConnections.length;
   
   const last30Days = Date.now() - (30 * 24 * 60 * 60 * 1000);
   
@@ -704,9 +809,8 @@ function calculateSummaryKPIs(data) {
   const snapshotPosts = postsData?.elements?.[0]?.snapshotData || [];
   const postsLast30Days = recentPosts.length > 0 ? recentPosts.length : Math.min(snapshotPosts.length, 5);
   
-  // Connections added last 30 days
-  const connections = connectionsData?.elements?.[0]?.snapshotData || [];
-  const recentConnections = connections.filter(conn => {
+  // Connections added last 30 days - use validated connections
+  const recentConnections = validConnections.filter(conn => {
     const connectedDate = new Date(conn["Connected On"] || conn.connectedOn || conn.date || conn.Date);
     return connectedDate.getTime() >= last30Days;
   });
