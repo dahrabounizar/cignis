@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Zap, RefreshCw, Database } from "lucide-react";
+import { AlertCircle, Zap, RefreshCw, Database, Info, Sparkles } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
@@ -55,31 +55,6 @@ export const Dashboard = () => {
     }
   };
 
-  if (!dmaToken) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-6"
-      >
-        <div className="text-center py-12">
-          <AlertCircle size={48} className="mx-auto text-orange-400 mb-4" />
-          <h2 className="text-2xl font-bold mb-4">Limited Access Mode</h2>
-          <p className="text-gray-600 mb-6">
-            DMA token is missing. You need to complete the DMA authentication flow to access dashboard features.
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => (window.location.href = "/")}
-          >
-            Complete DMA Authentication
-          </Button>
-        </div>
-      </motion.div>
-    );
-  }
-
   if (isLoading || !dashboardData) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
@@ -90,7 +65,7 @@ export const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (error && !dashboardData) {
     return (
       <div className="text-center py-12">
         <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
@@ -137,11 +112,30 @@ export const Dashboard = () => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      {/* Header with Debug Controls */}
+      {/* Header with Demo Data Indicator */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Dashboard</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Dashboard
+            </h2>
+            {dashboardData.isDemoData && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 rounded-full text-amber-700 text-sm font-medium"
+              >
+                <Sparkles size={14} />
+                Demo Data
+              </motion.div>
+            )}
+          </div>
           <p className="text-gray-600 mt-1">LinkedIn profile evaluation and key metrics</p>
+          {dashboardData.isDemoData && (
+            <p className="text-sm text-amber-600 mt-1">
+              {!dmaToken ? "Connect your LinkedIn account to see real data" : "Real data will load once available"}
+            </p>
+          )}
         </div>
         <div className="flex space-x-2">
           <Button
@@ -164,6 +158,26 @@ export const Dashboard = () => {
         </div>
       </div>
 
+      {/* Demo Data Info Banner */}
+      {dashboardData.isDemoData && !debugMode && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4"
+        >
+          <div className="flex items-start gap-3">
+            <Info size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-1">Demo Mode Active</h3>
+              <p className="text-blue-700 text-sm leading-relaxed">
+                You're viewing sample data to explore the dashboard features. 
+                {!dmaToken ? " Complete LinkedIn authentication to see your real analytics." : " Your real data will appear once LinkedIn data is available."}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Debug Panel */}
       {debugMode && dashboardData && (
         <Card variant="glass" className="p-4 bg-blue-50 border-blue-200">
@@ -183,6 +197,8 @@ export const Dashboard = () => {
           <div className="text-sm space-y-2">
             <div>Last Updated: {dashboardData.lastUpdated}</div>
             <div>DMA Token: {dmaToken ? 'Present' : 'Missing'}</div>
+            <div>Demo Data: {dashboardData.isDemoData ? 'Yes' : 'No'}</div>
+            {dashboardData.error && <div className="text-red-600">Error: {dashboardData.error}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <strong>Profile Evaluation:</strong>
@@ -223,51 +239,70 @@ export const Dashboard = () => {
       />
 
       {/* Summary KPIs and Mini Trends */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SummaryKPIsCard kpis={dashboardData.summaryKPIs} />
         <MiniTrendsCard trends={dashboardData.miniTrends} />
       </div>
 
       {/* Quick Actions */}
-      <Card variant="glass" className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <Zap className="mr-2" size={20} />
+      <Card variant="glass" className="p-6 bg-gradient-to-br from-gray-50 to-white border-gray-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold flex items-center text-gray-900">
+            <Zap className="mr-3 text-indigo-600" size={24} />
             Quick Actions
           </h3>
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <motion.button
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all"
+            className="p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl"
             onClick={() => setCurrentModule("analytics")}
           >
-            📊 View Detailed Analytics
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-2xl">📊</span>
+            </div>
+            <div className="font-semibold">View Detailed Analytics</div>
+            <div className="text-indigo-100 text-sm mt-1">Comprehensive performance insights</div>
           </motion.button>
+          
           <motion.button
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+            className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl"
             onClick={() => setCurrentModule("postgen")}
           >
-            ✍️ Generate New Post
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-2xl">✍️</span>
+            </div>
+            <div className="font-semibold">Generate New Post</div>
+            <div className="text-purple-100 text-sm mt-1">AI-powered content creation</div>
           </motion.button>
+          
           <motion.button
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
+            className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl"
             onClick={() => setCurrentModule("postpulse")}
           >
-            📈 Analyze Posts (PostPulse)
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-2xl">📈</span>
+            </div>
+            <div className="font-semibold">Analyze Posts (PostPulse)</div>
+            <div className="text-green-100 text-sm mt-1">Deep post performance analysis</div>
           </motion.button>
+          
           <motion.button
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all"
+            className="p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg hover:shadow-xl"
             onClick={() => setCurrentModule("scheduler")}
           >
-            📅 Schedule Content
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-2xl">📅</span>
+            </div>
+            <div className="font-semibold">Schedule Content</div>
+            <div className="text-orange-100 text-sm mt-1">Plan and automate posting</div>
           </motion.button>
         </div>
       </Card>
