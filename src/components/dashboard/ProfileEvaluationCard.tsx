@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Info, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Minus, HelpCircle } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { ProfileScore } from '../../hooks/useDashboardData';
 import { useAppStore } from '../../stores/appStore';
+import { RatingExplanationModal } from './RatingExplanationModal';
 
 interface ProfileEvaluationCardProps {
   scores: ProfileScore;
@@ -16,6 +19,7 @@ export const ProfileEvaluationCard = ({
   explanations 
 }: ProfileEvaluationCardProps) => {
   const { setCurrentModule } = useAppStore();
+  const [showExplanationModal, setShowExplanationModal] = useState(false);
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 bg-green-100 border-green-200';
@@ -55,7 +59,20 @@ export const ProfileEvaluationCard = ({
       onClick={() => setCurrentModule('analytics')}
     >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">Profile Evaluation</h3>
+        <div className="flex items-center space-x-3">
+          <h3 className="text-xl font-bold text-gray-900">Profile Evaluation</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowExplanationModal(true);
+            }}
+            className="text-gray-500 hover:text-blue-600"
+          >
+            <HelpCircle size={16} />
+          </Button>
+        </div>
         <div className="flex items-center space-x-2">
           <div className={`text-3xl font-bold ${
             overallScore >= 8 ? 'text-green-600' : 
@@ -117,6 +134,11 @@ export const ProfileEvaluationCard = ({
           <strong>Click to view detailed analytics</strong> and learn how to improve each score.
         </p>
       </div>
+
+      <RatingExplanationModal
+        isOpen={showExplanationModal}
+        onClose={() => setShowExplanationModal(false)}
+      />
     </Card>
   );
 };
