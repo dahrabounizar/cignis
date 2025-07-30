@@ -85,7 +85,52 @@ export const fetchLinkedInSnapshot = async (
     snapshotDataCount: data.elements?.[0]?.snapshotData?.length
   });
   
-  return data;
+  // Sanitize the data to prevent React rendering errors with objects
+  const sanitizeData = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    
+    if (Array.isArray(obj)) {
+      return obj.map(sanitizeData);
+    }
+    
+    if (typeof obj === 'object') {
+      // Handle specific LinkedIn API objects that might cause issues
+      if (obj.country && obj.language && Object.keys(obj).length === 2) {
+        // This is likely a preferredLocale object - convert to string
+        return `${obj.language}_${obj.country}`;
+      }
+      
+      if (obj.localized && obj.preferredLocale) {
+        // Handle localized content objects
+        const locale = obj.preferredLocale;
+        const localeKey = `${locale.language}_${locale.country}`;
+        const localizedContent = obj.localized[localeKey] || obj.localized[Object.keys(obj.localized)[0]];
+        
+        if (typeof localizedContent === 'string') {
+          return localizedContent;
+        } else if (localizedContent && localizedContent.rawText) {
+          return localizedContent.rawText;
+        }
+      }
+      
+      // Recursively sanitize nested objects
+      const sanitized: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        sanitized[key] = sanitizeData(value);
+      }
+      return sanitized;
+    }
+    
+    return obj;
+  };
+  
+  try {
+    const sanitizedData = sanitizeData(data);
+    return sanitizedData;
+  } catch (error) {
+    console.warn("Error sanitizing LinkedIn data:", error);
+    return data; // Return original data if sanitization fails
+  }
 };
 
 export const fetchLinkedInHistoricalPosts = async (

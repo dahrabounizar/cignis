@@ -31,7 +31,45 @@ export const useLinkedInSnapshot = (domain?: string) => {
   
   return useQuery({
     queryKey: ['linkedin-snapshot', domain],
-    queryFn: () => fetchLinkedInSnapshot(dmaToken!, domain),
+    queryFn: async () => {
+      try {
+        const data = await fetchLinkedInSnapshot(dmaToken!, domain);
+        
+        // Additional validation to ensure no objects with country/language slip through
+        const validateData = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj;
+          
+          if (Array.isArray(obj)) {
+            return obj.map(validateData);
+          }
+          
+          if (typeof obj === 'object') {
+            // Check for problematic objects
+            if (obj.country && obj.language && typeof obj.country === 'string' && typeof obj.language === 'string') {
+              console.warn('Found country/language object, converting to string:', obj);
+              return `${obj.language}_${obj.country}`;
+            }
+            
+            const validated: any = {};
+            for (const [key, value] of Object.entries(obj)) {
+              validated[key] = validateData(value);
+            }
+            return validated;
+          }
+          
+          return obj;
+        };
+        
+        return validateData(data);
+      } catch (error) {
+        console.error('Error in useLinkedInSnapshot:', error);
+        // Return safe fallback data
+        return {
+          elements: [],
+          paging: { count: 0, start: 0 }
+        };
+      }
+    },
     enabled: !!dmaToken,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes

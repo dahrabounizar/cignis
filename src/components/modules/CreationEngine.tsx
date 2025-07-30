@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Lightbulb, TrendingUp, Target, Zap, RefreshCw } from "lucide-react";
 import { Card } from "../ui/Card";
@@ -35,6 +35,54 @@ interface IdeaData {
   timestamp: number;
 }
 
+// Error Boundary Component
+class CreationEngineErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('CreationEngine Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-red-600 mb-2">
+              Something went wrong
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              We encountered an error while loading your content creation tools.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                this.setState({ hasError: false });
+                window.location.reload();
+              }}
+            >
+              <RefreshCw size={16} className="mr-2" />
+              Reload Page
+            </Button>
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Constants for better maintainability
 const GENERATION_DELAY = 1500;
 const SESSION_STORAGE_KEY = "ideaContent";
@@ -57,7 +105,7 @@ const FALLBACK_IDEAS: ContentIdea[] = [
   },
 ];
 
-export const CreationEngine = () => {
+const CreationEngineContent = () => {
   const [selectedStrategy, setSelectedStrategy] = useState<string>("");
   const [generatedIdeas, setGeneratedIdeas] = useState<ContentIdea[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -74,66 +122,92 @@ export const CreationEngine = () => {
   const analysis = useMemo(() => {
     if (!snapshotData || !changelogData) return null;
 
-    const posts =
-      changelogData.elements?.filter((e) => e.resourceName === "ugcPosts") ||
-      [];
-    const likes =
-      changelogData.elements?.filter(
-        (e) => e.resourceName === "socialActions/likes"
-      ) || [];
-    const comments =
-      changelogData.elements?.filter(
-        (e) => e.resourceName === "socialActions/comments"
-      ) || [];
+    try {
+      const posts =
+        changelogData.elements?.filter((e) => e.resourceName === "ugcPosts") ||
+        [];
+      const likes =
+        changelogData.elements?.filter(
+          (e) => e.resourceName === "socialActions/likes"
+        ) || [];
+      const comments =
+        changelogData.elements?.filter(
+          (e) => e.resourceName === "socialActions/comments"
+        ) || [];
 
-    // Analyze content types from posts
-    const contentTypes = {
-      text: 0,
-      image: 0,
-      video: 0,
-      carousel: 0,
-      poll: 0,
-    };
+      // Analyze content types from posts
+      const contentTypes = {
+        text: 0,
+        image: 0,
+        video: 0,
+        carousel: 0,
+        poll: 0,
+      };
 
-    posts.forEach((post) => {
-      const specificContent =
-        post.activity?.specificContent?.["com.linkedin.ugc.ShareContent"];
-      const media = specificContent?.media;
+      posts.forEach((post) => {
+        try {
+          const specificContent =
+            post.activity?.specificContent?.["com.linkedin.ugc.ShareContent"];
+          const media = specificContent?.media;
 
-      if (media && media.length > 0) {
-        if (media.length > 1) {
-          contentTypes.carousel++;
-        } else {
-          contentTypes.image++;
+          if (media && media.length > 0) {
+            if (media.length > 1) {
+              contentTypes.carousel++;
+            } else {
+              contentTypes.image++;
+            }
+          } else {
+            contentTypes.text++;
+          }
+        } catch (error) {
+          console.warn("Error processing post content type:", error);
+          contentTypes.text++; // Default to text if processing fails
         }
-      } else {
-        contentTypes.text++;
-      }
-    });
+      });
 
-    // Calculate engagement rates
-    const totalEngagement = likes.length + comments.length;
-    const avgEngagement = posts.length > 0 ? totalEngagement / posts.length : 0;
+      // Calculate engagement rates
+      const totalEngagement = likes.length + comments.length;
+      const avgEngagement = posts.length > 0 ? totalEngagement / posts.length : 0;
 
-    // Analyze best performing times
-    const postTimes = posts.map((p) => new Date(p.capturedAt).getHours());
-    const hourCounts = postTimes.reduce((acc, hour) => {
-      acc[hour] = (acc[hour] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>);
+      // Analyze best performing times
+      const postTimes = posts.map((p) => {
+        try {
+          return new Date(p.capturedAt).getHours();
+        } catch (error) {
+          console.warn("Error parsing post time:", error);
+          return 9; // Default to 9 AM
+        }
+      });
+      
+      const hourCounts = postTimes.reduce((acc, hour) => {
+        acc[hour] = (acc[hour] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
 
-    const optimalHour =
-      Object.entries(hourCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "9";
+      const optimalHour =
+        Object.entries(hourCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "9";
 
-    return {
-      totalPosts: posts.length,
-      avgEngagement,
-      contentTypes,
-      optimalHour: parseInt(optimalHour),
-      bestPerformingType:
-        Object.entries(contentTypes).sort(([, a], [, b]) => b - a)[0]?.[0] ||
-        "text",
-    };
+      const bestPerformingTypeEntry = Object.entries(contentTypes).sort(([, a], [, b]) => b - a)[0];
+      const bestPerformingType = bestPerformingTypeEntry?.[0] || "text";
+
+      return {
+        totalPosts: posts.length,
+        avgEngagement: Number(avgEngagement.toFixed(1)),
+        contentTypes,
+        optimalHour: parseInt(optimalHour),
+        bestPerformingType: String(bestPerformingType), // Ensure it's always a string
+      };
+    } catch (error) {
+      console.error("Error in analysis calculation:", error);
+      // Return safe default values
+      return {
+        totalPosts: 0,
+        avgEngagement: 0,
+        contentTypes: { text: 0, image: 0, video: 0, carousel: 0, poll: 0 },
+        optimalHour: 9,
+        bestPerformingType: "text",
+      };
+    }
   }, [snapshotData, changelogData]);
 
   // Content strategies based on analysis
@@ -284,10 +358,48 @@ export const CreationEngine = () => {
     setIsGeneratingStrategy(true);
     try {
       const posts = changelogData.elements?.filter(e => e.resourceName === "ugcPosts") || [];
-      const cleanPosts = posts.slice(0, 3).map(post => ({
-        text: post.activity?.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareCommentary?.text?.substring(0, 200) || "Post content",
-        timestamp: post.capturedAt
-      }));
+      const cleanPosts = posts.slice(0, 3).map(post => {
+        try {
+          // Safely extract text content, ensuring we never pass objects to React
+          const shareContent = post.activity?.specificContent?.["com.linkedin.ugc.ShareContent"];
+          const shareCommentary = shareContent?.shareCommentary;
+          
+          let text = "Post content";
+          
+          // Handle different possible structures of shareCommentary
+          if (typeof shareCommentary === 'string') {
+            text = shareCommentary.substring(0, 200);
+          } else if (shareCommentary && typeof shareCommentary === 'object') {
+            // If shareCommentary is an object, try to extract text
+            if (shareCommentary.text && typeof shareCommentary.text === 'string') {
+              text = shareCommentary.text.substring(0, 200);
+            } else if (shareCommentary.localized) {
+              // Handle localized content
+              const localized = shareCommentary.localized;
+              if (typeof localized === 'object') {
+                // Get the first available localized text
+                const firstKey = Object.keys(localized)[0];
+                if (firstKey && typeof localized[firstKey] === 'string') {
+                  text = localized[firstKey].substring(0, 200);
+                } else if (firstKey && localized[firstKey] && typeof localized[firstKey].rawText === 'string') {
+                  text = localized[firstKey].rawText.substring(0, 200);
+                }
+              }
+            }
+          }
+          
+          return {
+            text: text || "Post content",
+            timestamp: post.capturedAt || Date.now()
+          };
+        } catch (error) {
+          console.warn("Error processing post for AI strategy:", error);
+          return {
+            text: "Post content",
+            timestamp: post.capturedAt || Date.now()
+          };
+        }
+      });
 
       const strategy = await generateContentStrategy(cleanPosts, analysis || {});
       setAiStrategy(strategy);
@@ -379,19 +491,19 @@ export const CreationEngine = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {analysis.totalPosts}
+                {String(analysis.totalPosts || 0)}
               </div>
               <div className="text-sm text-gray-500">Total Posts</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {analysis.avgEngagement.toFixed(1)}
+                {String(analysis.avgEngagement || 0)}
               </div>
               <div className="text-sm text-gray-500">Avg Engagement</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {analysis.optimalHour}:00
+                {String(analysis.optimalHour || 9)}:00
               </div>
               <div className="text-sm text-gray-500">Optimal Hour</div>
             </div>
@@ -399,8 +511,8 @@ export const CreationEngine = () => {
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <p className="text-sm">
               <strong>Recommendation:</strong> Your{" "}
-              {analysis.bestPerformingType} posts perform best. Consider posting
-              around {analysis.optimalHour}:00 for maximum engagement.
+              {String(analysis.bestPerformingType || "text")} posts perform best. Consider posting
+              around {String(analysis.optimalHour || 9)}:00 for maximum engagement.
             </p>
           </div>
         </Card>
@@ -520,5 +632,13 @@ export const CreationEngine = () => {
         </Card>
       )}
     </motion.div>
+  );
+};
+
+export const CreationEngine = () => {
+  return (
+    <CreationEngineErrorBoundary>
+      <CreationEngineContent />
+    </CreationEngineErrorBoundary>
   );
 };
