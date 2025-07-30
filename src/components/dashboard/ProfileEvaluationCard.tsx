@@ -86,19 +86,27 @@ export const ProfileEvaluationCard = ({
             transition={{ delay: index * 0.05 }}
             className="group relative"
           >
-            <div className={`flex items-center justify-between p-3 rounded-lg border-2 hover:shadow-md transition-all ${getScoreColor(item.score)}`}>
+            <div className={`flex items-center justify-between p-3 rounded-lg border-2 hover:shadow-md transition-all ${
+              item.score === null ? 'bg-gray-100 border-gray-200' : getScoreColor(item.score)
+            }`}>
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-full bg-white ${getScoreColor(item.score).split(' ')[0]}`}>
-                  {getScoreIcon(item.score)}
+                <div className={`p-2 rounded-full bg-white ${
+                  item.score === null ? 'text-gray-400' : getScoreColor(item.score).split(' ')[0]
+                }`}>
+                  {item.score === null ? <Minus size={16} /> : getScoreIcon(item.score)}
                 </div>
                 <div>
                   <p className="font-medium text-gray-900 text-sm">{item.label}</p>
-                  <p className="text-xs text-gray-600">{getScoreLabel(item.score)}</p>
+                  <p className="text-xs text-gray-600">
+                    {item.score === null ? 'Not Available' : getScoreLabel(item.score)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <span className={`text-lg font-bold ${getScoreColor(item.score).split(' ')[0]}`}>
-                  {item.score}
+                <span className={`text-lg font-bold ${
+                  item.score === null ? 'text-gray-400' : getScoreColor(item.score).split(' ')[0]
+                }`}>
+                  {item.score === null ? 'N/A' : item.score}
                 </span>
                 <div className="relative">
                   <Info size={14} className="text-gray-400 cursor-help" />

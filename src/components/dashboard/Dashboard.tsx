@@ -166,12 +166,9 @@ export const Dashboard = () => {
 
       {/* Debug Panel */}
       {debugMode && dashboardData && (
-        <Card variant="glass" className="p-4 bg-blue-50 border-blue-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold flex items-center">
-              <Database size={16} className="mr-2" />
-              Debug Information
-            </h3>
+        <Card variant="glass" className="p-4 bg-gray-50">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold">Debug Information</h3>
             <Button
               variant="ghost"
               size="sm"
@@ -181,26 +178,28 @@ export const Dashboard = () => {
             </Button>
           </div>
           <div className="text-sm space-y-2">
-            <div>Last Updated: {dashboardData.lastUpdated}</div>
             <div>DMA Token: {dmaToken ? 'Present' : 'Missing'}</div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <strong>Profile Evaluation:</strong>
-                <div>Overall Score: {dashboardData.profileEvaluation.overallScore}/10</div>
-                <div>Scores: {Object.values(dashboardData.profileEvaluation.scores).join(', ')}</div>
+                <strong>Profile Scores:</strong>
+                <div>Profile Completeness: {dashboardData.scores.profileCompleteness}/10</div>
+                <div>Posting Activity: {dashboardData.scores.postingActivity}/10</div>
+                <div>Engagement Quality: {dashboardData.scores.engagementQuality}/10</div>
+                <div>Network Growth: {dashboardData.scores.networkGrowth}/10</div>
+                <div>Audience Relevance: {dashboardData.scores.audienceRelevance}/10</div>
               </div>
               <div>
-                <strong>Summary KPIs:</strong>
-                <div>Total Connections: {dashboardData.summaryKPIs.totalConnections}</div>
-                <div>Posts (30d): {dashboardData.summaryKPIs.postsLast30Days}</div>
-                <div>Engagement Rate: {dashboardData.summaryKPIs.engagementRate}</div>
-                <div>New Connections: {dashboardData.summaryKPIs.connectionsLast30Days}</div>
+                <strong>Summary:</strong>
+                <div>Total Connections: {dashboardData.summary.totalConnections}</div>
+                <div>Posts (30d): {dashboardData.summary.posts30d}</div>
+                <div>Engagement Rate: {dashboardData.summary.engagementRatePct}%</div>
+                <div>New Connections: {dashboardData.summary.newConnections}</div>
               </div>
             </div>
             <div>
-              <strong>Mini Trends:</strong>
-              <div>Posts: {dashboardData.miniTrends.posts.map(p => p.value).join(', ')}</div>
-              <div>Engagements: {dashboardData.miniTrends.engagements.map(e => e.value).join(', ')}</div>
+              <strong>Trends:</strong>
+              <div>Weekly Posts: {Object.entries(dashboardData.trends.weeklyPosts).map(([week, count]) => `${week}: ${count}`).join(', ')}</div>
+              <div>Weekly Engagements: {Object.entries(dashboardData.trends.weeklyEngagements).map(([week, count]) => `${week}: ${count}`).join(', ')}</div>
             </div>
             <div className="mt-4">
               <Button
@@ -217,15 +216,40 @@ export const Dashboard = () => {
 
       {/* Profile Evaluation */}
       <ProfileEvaluationCard
-        scores={dashboardData.profileEvaluation.scores}
-        overallScore={dashboardData.profileEvaluation.overallScore}
-        explanations={dashboardData.profileEvaluation.explanations}
+        scores={dashboardData.scores}
+        overallScore={Math.round(Object.values(dashboardData.scores).filter(v => v !== null).reduce((a, b) => a + b, 0) / Object.values(dashboardData.scores).filter(v => v !== null).length)}
+        explanations={{
+          profileCompleteness: "Profile completeness based on filled fields",
+          postingActivity: "Posting frequency in the last 28 days",
+          engagementQuality: "Average engagement per post",
+          networkGrowth: "New connections in the last 28 days",
+          audienceRelevance: "Percentage of connections in target industries",
+          contentDiversity: "Variety in content types",
+          engagementRate: "Total engagement relative to network size",
+          mutualInteractions: "Comments exchanged with others",
+          profileVisibility: "Search appearances (if available)",
+          professionalBrand: "Recommendations and endorsements count"
+        }}
       />
 
       {/* Summary KPIs and Mini Trends */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SummaryKPIsCard kpis={dashboardData.summaryKPIs} />
-        <MiniTrendsCard trends={dashboardData.miniTrends} />
+        <SummaryKPIsCard kpis={{
+          totalConnections: dashboardData.summary.totalConnections,
+          postsLast30Days: dashboardData.summary.posts30d,
+          engagementRate: `${dashboardData.summary.engagementRatePct}%`,
+          connectionsLast30Days: dashboardData.summary.newConnections
+        }} />
+        <MiniTrendsCard trends={{
+          posts: Object.entries(dashboardData.trends.weeklyPosts).map(([week, value]) => ({
+            date: week,
+            value
+          })),
+          engagements: Object.entries(dashboardData.trends.weeklyEngagements).map(([week, value]) => ({
+            date: week,
+            value
+          }))
+        }} />
       </div>
 
       {/* Quick Actions */}

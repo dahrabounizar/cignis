@@ -10,34 +10,26 @@ export interface ProfileScore {
   contentDiversity: number;
   engagementRate: number;
   mutualInteractions: number;
-  profileVisibility: number;
+  profileVisibility: number | null;
   professionalBrand: number;
 }
 
-export interface SummaryKPIs {
+export interface Summary {
   totalConnections: number;
-  postsLast30Days: number;
-  engagementRate: string;
-  connectionsLast30Days: number;
+  posts30d: number;
+  engagementRatePct: number;
+  newConnections: number;
 }
 
-export interface MiniTrend {
-  date: string;
-  value: number;
+export interface Trends {
+  weeklyPosts: Record<string, number>;
+  weeklyEngagements: Record<string, number>;
 }
 
 export interface DashboardData {
-  profileEvaluation: {
-    scores: ProfileScore;
-    overallScore: number;
-    explanations: Record<string, string>;
-  };
-  summaryKPIs: SummaryKPIs;
-  miniTrends: {
-    posts: MiniTrend[];
-    engagements: MiniTrend[];
-  };
-  lastUpdated: string;
+  scores: ProfileScore;
+  summary: Summary;
+  trends: Trends;
 }
 
 export const useDashboardData = () => {
@@ -46,8 +38,32 @@ export const useDashboardData = () => {
   return useQuery({
     queryKey: ['dashboard-data'],
     queryFn: async (): Promise<DashboardData> => {
+      // For local development without DMA token, return mock data
       if (!dmaToken) {
-        throw new Error('DMA token is required for dashboard data');
+        return {
+          scores: {
+            profileCompleteness: 8,
+            postingActivity: 6,
+            engagementQuality: 7,
+            networkGrowth: 5,
+            audienceRelevance: 8,
+            contentDiversity: 6,
+            engagementRate: 7,
+            mutualInteractions: 5,
+            profileVisibility: null,
+            professionalBrand: 7
+          },
+          summary: {
+            totalConnections: 1200,
+            posts30d: 4,
+            engagementRatePct: 4.6,
+            newConnections: 45
+          },
+          trends: {
+            weeklyPosts: { '2025-W01': 3, '2025-W02': 5 },
+            weeklyEngagements: { '2025-W01': 20, '2025-W02': 33 }
+          }
+        };
       }
       
       const response = await fetch('/.netlify/functions/dashboard-data', {
@@ -66,14 +82,14 @@ export const useDashboardData = () => {
       const data = await response.json();
       
       // Validate the response structure
-      if (!data.profileEvaluation || !data.summaryKPIs || !data.miniTrends) {
+      if (!data.scores || !data.summary || !data.trends) {
         console.error('Invalid dashboard data structure:', data);
         throw new Error('Invalid dashboard data structure received');
       }
       
       return data;
     },
-    enabled: !!dmaToken,
+    enabled: true, // Always enabled, will use mock data if no token
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
