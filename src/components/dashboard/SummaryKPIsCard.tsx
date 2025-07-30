@@ -10,7 +10,7 @@ interface SummaryKPIsCardProps {
 export const SummaryKPIsCard = ({ kpis }: SummaryKPIsCardProps) => {
   const kpiItems = [
     {
-      label: 'Total Connections',
+      label: 'New Invitations',
       value: kpis.totalConnections.toLocaleString(),
       icon: Users,
       color: 'from-blue-500 to-blue-600',

@@ -17,6 +17,7 @@ export const Dashboard = () => {
   const { data: dashboardData, isLoading, error, refetch } = useDashboardData();
   const [debugMode, setDebugMode] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
+  const [isEnablingDMA, setIsEnablingDMA] = useState(false);
 
   const handleRefetch = async () => {
     setIsRefetching(true);
@@ -24,6 +25,31 @@ export const Dashboard = () => {
       await refetch();
     } finally {
       setIsRefetching(false);
+    }
+  };
+
+  const handleEnableDMA = async () => {
+    setIsEnablingDMA(true);
+    try {
+      const response = await fetch('/.netlify/functions/enable-dma', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${dmaToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        // DMA enabled successfully, refetch the dashboard data
+        await refetch();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to enable DMA:', errorData);
+      }
+    } catch (error) {
+      console.error('Error enabling DMA:', error);
+    } finally {
+      setIsEnablingDMA(false);
     }
   };
 
@@ -91,6 +117,50 @@ export const Dashboard = () => {
   }
 
   if (error) {
+    // Check if the error is due to DMA not being enabled
+    const isDMAError = error.message?.includes('DMA not enabled') || error.message?.includes('428');
+    
+    if (isDMAError) {
+      return (
+        <div className="text-center py-12">
+          <Database size={48} className="mx-auto text-orange-400 mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            DMA Authorization Required
+          </h2>
+          <p className="text-gray-600 mb-4">
+            To access your LinkedIn data, you need to enable DMA (Digital Markets Act) data archiving.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            This is a one-time setup that allows third-party apps to access your LinkedIn data under EU regulations.
+          </p>
+          <div className="space-y-3">
+            <Button 
+              variant="primary" 
+              onClick={handleEnableDMA} 
+              disabled={isEnablingDMA}
+            >
+              <Zap size={16} className="mr-2" />
+              {isEnablingDMA ? "Enabling DMA..." : "Enable DMA Access"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDebugMode(!debugMode)}
+            >
+              {debugMode ? "Hide" : "Show"} Debug Info
+            </Button>
+          </div>
+          {debugMode && (
+            <div className="mt-6 p-4 bg-gray-100 rounded-lg text-left">
+              <h3 className="font-semibold mb-2">Debug Information:</h3>
+              <pre className="text-xs overflow-auto">
+                {JSON.stringify(error, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
     return (
       <div className="text-center py-12">
         <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
